@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Syenergy Environics CRM Advance</title>
-    
-    <!-- Firebase SDK (v8) CDN -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; margin: 0; padding: 0; }
         
@@ -22,6 +17,7 @@
 
         .container { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
         
+        /* Perfectly Balanced 3-Column Header Layout */
         .header-container {
             display: flex;
             align-items: center;
@@ -32,6 +28,7 @@
             gap: 15px;
         }
 
+        /* Left Side Controls (Compact & Auto-fitted Dropdown) */
         .header-left {
             display: flex;
             align-items: center;
@@ -41,7 +38,7 @@
         }
 
         .header-left select {
-            width: auto;
+            width: auto; /* Box text ke hisab se chhota ho jayega */
             padding: 8px 12px;
             font-weight: 700;
             border-radius: 8px;
@@ -54,6 +51,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
+        /* Perfectly Centered Title */
         .main-title {
             color: #ffffff; 
             font-size: 24px;
@@ -64,6 +62,7 @@
             white-space: nowrap;
         }
 
+        /* Right Side Logo */
         .header-right {
             flex: 1;
             display: flex;
@@ -86,6 +85,7 @@
             object-fit: contain;
         }
 
+        /* Dashboard Metrics */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 22px; }
         .stat-card { 
             background: rgba(241, 245, 249, 0.95); 
@@ -174,6 +174,16 @@
             font-size: 12px; 
             font-weight: bold; 
         }
+        .btn-import { 
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); 
+            color: white; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 12px; 
+            font-weight: bold; 
+        }
 
         table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; }
         th, td { border-bottom: 1px solid #cbd5e1; padding: 12px 10px; text-align: left; font-size: 13px; }
@@ -211,7 +221,9 @@
 <body>
 
 <div class="container">
+    <!-- Header with Compact Left Security Dropdown, Centered Title, and Right Logo -->
     <div class="header-container">
+        <!-- Left Side: Clean & Compact Dropdown -->
         <div class="header-left">
             <select id="userRoleSelect" onchange="handleRoleChange()">
                 <option value="User">User Mode</option>
@@ -220,8 +232,10 @@
             </select>
         </div>
 
+        <!-- Center: System Title -->
         <h1 class="main-title">Syenergy Environics CRM Advance</h1>
 
+        <!-- Right: Corporate Logo -->
         <div class="header-right">
             <div class="logo-box">
                 <svg class="logo-img" viewBox="0 0 450 120" xmlns="http://www.w3.org/2000/svg">
@@ -238,6 +252,7 @@
         </div>
     </div>
 
+    <!-- Stats Dashboard Bar -->
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-title">Total Leads</div>
@@ -257,6 +272,7 @@
         </div>
     </div>
 
+    <!-- Search Section -->
     <div class="card search-card">
         <h2>🔍 Quick Search Lead</h2>
         <div style="display: flex; gap: 8px;">
@@ -266,6 +282,7 @@
         <div id="searchResults" style="margin-top: 8px; max-height: 150px; overflow-y: auto;"></div>
     </div>
 
+    <!-- Form Section -->
     <div class="card">
         <div class="card-header">
             <h2 id="formHeader">Add New Lead / Customer</h2>
@@ -300,12 +317,14 @@
                 </div>
                 <div>
                     <label>Country</label>
-                    <select id="country" onchange="autoPickCountryCode()"></select>
+                    <select id="country" onchange="autoPickCountryCode()">
+                    </select>
                 </div>
                 <div>
                     <label>Mobile Number *</label>
                     <div class="input-group">
-                        <select id="countryCode" class="code-box" required></select>
+                        <select id="countryCode" class="code-box" required>
+                        </select>
                         <input type="tel" id="mobile" required placeholder="Mobile Number">
                     </div>
                 </div>
@@ -390,10 +409,15 @@
         </form>
     </div>
 
+    <!-- Table Section -->
     <div class="card">
         <div class="card-header">
-            <h2>Saved Leads List (Live Cloud Synced)</h2>
-            <button class="btn-excel" onclick="exportToCSV()">📥 Export to Excel</button>
+            <h2>Saved Leads List</h2>
+            <div style="display: flex; gap: 8px;">
+                <input type="file" id="csvFileInput" accept=".csv" style="display:none;" onchange="processImportCSV(event)">
+                <button class="btn-import" onclick="triggerImportCSV()">📤 Import CSV (Admin Only)</button>
+                <button class="btn-excel" onclick="exportToCSV()">📥 Export to Excel</button>
+            </div>
         </div>
         <div style="overflow-x:auto;">
             <table>
@@ -413,12 +437,13 @@
     </div>
 </div>
 
+<!-- Follow-up Modal -->
 <div id="followUpModal" class="modal">
     <div class="modal-content" style="max-width: 500px;">
         <button class="close-btn" onclick="closeFollowUpModal()">✕ Close</button>
         <h2 style="color:#16a34a; margin-bottom: 15px;">💬 Add Follow-up Note</h2>
         <form id="followUpForm" onsubmit="saveFollowUp(event)">
-            <input type="hidden" id="followUpLeadId">
+            <input type="hidden" id="followUpLeadIndex">
             
             <div style="margin-bottom: 12px;">
                 <label>Updated Lead Status</label>
@@ -453,6 +478,7 @@
     </div>
 </div>
 
+<!-- Details Modal -->
 <div id="viewModal" class="modal">
     <div class="modal-content">
         <button class="close-btn" onclick="closeModal()">✕ Close</button>
@@ -462,39 +488,6 @@
 </div>
 
 <script>
-    // -------------------------------------------------------------
-    // 🔥 FIREBASE CONFIGURATION (आपकी नई Keys कनेक्टेड हैं)
-    // -------------------------------------------------------------
-    const firebaseConfig = {
-        apiKey: "AIzaSyDsFYpk4qCiE4pSsju8h1Ms_lElxTu8ocY",
-        authDomain: "environics-crm.firebaseapp.com",
-        databaseURL: "https://environics-crm-default-rtdb.firebaseio.com",
-        projectId: "environics-crm",
-        storageBucket: "environics-crm.firebasestorage.app",
-        messagingSenderId: "294154079975",
-        appId: "1:294154079975:web:3c8f6cc233089c30829c42"
-    };
-
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const leadsRef = db.ref('leads');
-
-    let leadsMap = {}; 
-    let leads = [];    
-    let editingLeadId = null;
-
-    // Realtime Database Listener
-    leadsRef.on('value', (snapshot) => {
-        const data = snapshot.val();
-        leadsMap = data || {};
-        leads = [];
-        for (let id in leadsMap) {
-            leads.push({ id: id, ...leadsMap[id] });
-        }
-        renderLeads();
-    });
-
     function getAdminPIN() {
         return localStorage.getItem('crm_admin_pin') || "1234";
     }
@@ -515,7 +508,7 @@
         }
     }
 
-    let currentRole = "User";
+    let currentRole = "User"; // Default Security Mode
 
     function handleRoleChange() {
         const select = document.getElementById('userRoleSelect');
@@ -523,7 +516,7 @@
 
         if (selected === "ChangePIN") {
             changeAdminPIN();
-            select.value = currentRole;
+            select.value = currentRole; // Reset dropdown to active mode
             return;
         }
 
@@ -531,9 +524,9 @@
             const pass = prompt("🔐 Enter Admin Passcode:");
             if (pass === getAdminPIN()) {
                 currentRole = "Admin";
-                alert("✅ Admin Mode Activated.");
+                alert("✅ Admin Mode Activated. Edit and Delete features are unlocked.");
             } else {
-                alert("❌ Incorrect Admin PIN!");
+                alert("❌ Incorrect Admin PIN! Access Denied.");
                 select.value = "User";
                 currentRole = "User";
             }
@@ -641,6 +634,8 @@
         }
     }
 
+    let leads = JSON.parse(localStorage.getItem('crm_leads_v8')) || [];
+    let editIndex = -1;
     const form = document.getElementById('crmForm');
 
     function parseNumber(val) {
@@ -700,10 +695,11 @@
         }
 
         filtered.forEach(l => {
+            const originalIndex = leads.findIndex(item => item.id === l.id);
             const itemDiv = document.createElement('div');
             itemDiv.style.cssText = "background:#cbd5e1; padding:8px 12px; margin-bottom:4px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; border:1px solid #94a3b8; font-size:13px;";
             
-            const editButtonHTML = `<button type="button" onclick="loadLeadToForm('${l.id}')" style="background:#d97706; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">Edit Lead</button>`;
+            const editButtonHTML = `<button type="button" onclick="loadLeadToForm(${originalIndex})" style="background:#d97706; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">Edit Lead</button>`;
 
             itemDiv.innerHTML = `
                 <span><strong>${l.clientName}</strong> (${l.personName}) - <small style="color:#334155;">${l.status}</small></span>
@@ -718,11 +714,9 @@
         document.getElementById('searchResults').innerHTML = '';
     }
 
-    function loadLeadToForm(id) {
-        const l = leadsMap[id];
-        if (!l) return;
-        
-        editingLeadId = id;
+    function loadLeadToForm(index) {
+        const l = leads[index];
+        editIndex = index;
         document.getElementById('clientName').value = l.clientName || '';
         document.getElementById('personName').value = l.personName || '';
         document.getElementById('designation').value = l.designation || '';
@@ -752,7 +746,7 @@
     }
 
     function resetFormState() {
-        editingLeadId = null;
+        editIndex = -1;
         form.reset();
         document.getElementById('country').value = "India";
         document.getElementById('countryCode').value = "+91";
@@ -766,10 +760,8 @@
 
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        
-        const existingFollowups = editingLeadId && leadsMap[editingLeadId] ? (leadsMap[editingLeadId].followUps || []) : [];
-
         const leadData = {
+            id: editIndex >= 0 ? leads[editIndex].id : Date.now(),
             clientName: document.getElementById('clientName').value,
             personName: document.getElementById('personName').value,
             designation: document.getElementById('designation').value,
@@ -789,19 +781,13 @@
             discountPer: document.getElementById('discountPer').value,
             summary: document.getElementById('summary').value,
             remarks: document.getElementById('remarks').value,
-            followUps: existingFollowups
+            followUps: editIndex >= 0 ? (leads[editIndex].followUps || []) : []
         };
 
-        if (editingLeadId) {
-            leadsRef.child(editingLeadId).update(leadData, (err) => {
-                if (!err) alert("✅ Lead Updated on Cloud!");
-            });
-        } else {
-            leadsRef.push(leadData, (err) => {
-                if (!err) alert("✅ New Lead Saved to Cloud!");
-            });
-        }
+        if (editIndex >= 0) { leads[editIndex] = leadData; } 
+        else { leads.push(leadData); }
 
+        saveAndRender();
         resetFormState();
     });
 
@@ -824,12 +810,12 @@
             return;
         }
 
-        leads.forEach((lead) => {
-            const badgeClass = (lead.status || 'New').replace(/\s+/g, '');
+        leads.forEach((lead, index) => {
+            const badgeClass = lead.status.replace(/\s+/g, '');
             
             const adminActionsHTML = (currentRole === "Admin") 
-                ? `<button class="btn-action btn-edit" onclick="loadLeadToForm('${lead.id}')">Edit</button>
-                   <button class="btn-action btn-delete" onclick="deleteLead('${lead.id}')">Delete</button>` 
+                ? `<button class="btn-action btn-edit" onclick="loadLeadToForm(${index})">Edit</button>
+                   <button class="btn-action btn-delete" onclick="deleteLead(${index})">Delete</button>` 
                 : '';
 
             const tr = document.createElement('tr');
@@ -840,8 +826,8 @@
                 <td><span class="badge badge-${badgeClass}">${lead.status}</span></td>
                 <td>₹${formatNumber(lead.agreed || lead.proposal || 0)}</td>
                 <td>
-                    <button class="btn-action btn-note" onclick="openFollowUpModal('${lead.id}')">+ Note</button>
-                    <button class="btn-action btn-view" onclick="viewLeadDetails('${lead.id}')">View</button>
+                    <button class="btn-action btn-note" onclick="openFollowUpModal(${index})">+ Note</button>
+                    <button class="btn-action btn-view" onclick="viewLeadDetails(${index})">View</button>
                     ${adminActionsHTML}
                 </td>
             `;
@@ -850,9 +836,9 @@
         updateStats();
     }
 
-    function openFollowUpModal(id) {
-        document.getElementById('followUpLeadId').value = id;
-        document.getElementById('fuStatus').value = leadsMap[id].status || 'New';
+    function openFollowUpModal(index) {
+        document.getElementById('followUpLeadIndex').value = index;
+        document.getElementById('fuStatus').value = leads[index].status || 'New';
         document.getElementById('fuMember').value = '';
         document.getElementById('fuNote').value = '';
         document.getElementById('fuNextDate').value = '';
@@ -865,36 +851,35 @@
 
     function saveFollowUp(e) {
         e.preventDefault();
-        const id = document.getElementById('followUpLeadId').value;
+        const index = document.getElementById('followUpLeadIndex').value;
         const newStatus = document.getElementById('fuStatus').value;
         const member = document.getElementById('fuMember').value.trim();
         const note = document.getElementById('fuNote').value.trim();
         const nextDate = document.getElementById('fuNextDate').value.trim();
 
-        const currentFollowups = leadsMap[id].followUps || [];
+        if (!leads[index].followUps) {
+            leads[index].followUps = [];
+        }
 
-        const newLog = {
-            date: new Date().toLocaleString('en-IN'),
+        const today = new Date().toLocaleString('en-IN');
+
+        leads[index].followUps.push({
+            date: today,
             member: member || 'Team Member',
             status: newStatus,
             note: note,
             nextDate: nextDate || 'Not Specified'
-        };
-
-        currentFollowups.push(newLog);
-
-        leadsRef.child(id).update({
-            status: newStatus,
-            followUps: currentFollowups
-        }, (err) => {
-            if(!err) alert("✅ Follow-up log saved to Cloud!");
         });
 
+        leads[index].status = newStatus;
+
+        saveAndRender();
         closeFollowUpModal();
+        alert("✅ Follow-up log saved successfully!");
     }
 
-    function viewLeadDetails(id) {
-        const l = leadsMap[id];
+    function viewLeadDetails(index) {
+        const l = leads[index];
         
         let followUpHTML = "<h3 style='color:#1e3a8a; margin-bottom:12px;'>💬 Follow-up & Discussion History</h3>";
         if (l.followUps && l.followUps.length > 0) {
@@ -925,7 +910,7 @@
             <p><b>Work Tele No:</b> ${l.stdCode ? '(' + l.stdCode + ') ' : ''}${l.workTel || 'N/A'}</p>
             <p><b>Source of Lead:</b> ${l.source || 'N/A'}</p>
             <p><b>Location:</b> ${l.city ? l.city + ', ' : ''}${l.country}</p>
-            <p><b>Current Stage:</b> <span class="badge badge-${(l.status||'').replace(/\s+/g, '')}">${l.status}</span></p>
+            <p><b>Current Stage:</b> <span class="badge badge-${l.status.replace(/\s+/g, '')}">${l.status}</span></p>
             <p><b>Original Proposal:</b> ₹${formatNumber(l.proposal || 0)}</p>
             <p><b>Final Agreed:</b> ₹${formatNumber(l.agreed || 0)}</p>
             <p><b>Discount Given:</b> ₹${formatNumber(l.discountAmt || 0)} (${l.discountPer || '0%'})</p>
@@ -939,14 +924,15 @@
 
     function closeModal() { document.getElementById('viewModal').style.display = 'none'; }
 
-    function deleteLead(id) {
+    function deleteLead(index) {
         if (currentRole !== "Admin") {
             alert("🛑 Access Denied! Deletion is restricted to Admin Mode only.");
             return; 
         }
 
-        if (confirm('Are you sure you want to permanently delete this lead record from Cloud?')) {
-            leadsRef.child(id).remove();
+        if (confirm('Are you sure you want to permanently delete this lead record?')) {
+            leads.splice(index, 1);
+            saveAndRender();
         }
     }
 
@@ -971,7 +957,101 @@
         document.body.removeChild(link);
     }
 
+    /* Import CSV Logic (Strictly Admin Only) */
+    function triggerImportCSV() {
+        if (currentRole !== "Admin") {
+            alert("🛑 Access Denied! Importing bulk leads is restricted to Admin Mode only.");
+            return;
+        }
+        document.getElementById('csvFileInput').click();
+    }
+
+    function parseCSVLine(text) {
+        let result = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+            let c = text[i];
+            if (c === '"') {
+                if (inQuotes && text[i+1] === '"') {
+                    cur += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (c === ',' && !inQuotes) {
+                result.push(cur.trim());
+                cur = '';
+            } else {
+                cur += c;
+            }
+        }
+        result.push(cur.trim());
+        return result;
+    }
+
+    function processImportCSV(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const content = event.target.result;
+            const lines = content.split(/\r\n|\n/).filter(line => line.trim() !== '');
+
+            if (lines.length <= 1) {
+                alert("❌ CSV file is empty or missing data rows.");
+                return;
+            }
+
+            let importedCount = 0;
+            // Skip header (line 0)
+            for (let i = 1; i < lines.length; i++) {
+                const cols = parseCSVLine(lines[i]);
+                if (cols.length >= 2 && cols[0]) {
+                    const mobileRaw = (cols[3] || '').replace(/'/g, '');
+                    const newLead = {
+                        id: Date.now() + i,
+                        clientName: cols[0] || '',
+                        personName: cols[1] || 'N/A',
+                        designation: cols[2] || '',
+                        countryCode: '+91',
+                        mobile: mobileRaw,
+                        email: cols[4] || '',
+                        stdCode: cols[5] || '',
+                        workTel: cols[6] || '',
+                        address: cols[7] || '',
+                        city: cols[8] || '',
+                        country: cols[9] || 'India',
+                        source: cols[10] || 'Referral',
+                        status: cols[11] || 'New',
+                        proposal: parseNumber(cols[12]),
+                        agreed: parseNumber(cols[13]),
+                        discountAmt: parseNumber(cols[14]),
+                        discountPer: cols[15] || '',
+                        summary: cols[16] || '',
+                        remarks: cols[17] || '',
+                        followUps: []
+                    };
+                    leads.push(newLead);
+                    importedCount++;
+                }
+            }
+
+            saveAndRender();
+            alert(`✅ Successfully imported ${importedCount} leads!`);
+            document.getElementById('csvFileInput').value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('crm_leads_v8', JSON.stringify(leads));
+        renderLeads();
+    }
+
     populateCountries();
+    renderLeads();
 </script>
 
 </body>

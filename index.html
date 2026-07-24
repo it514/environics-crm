@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syenergy Environics CRM Advance</title>
+    
+    <!-- Firebase SDK (v8) CDN -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; margin: 0; padding: 0; }
+        
+        body { 
+            background-color: #0e3768;
+            min-height: 100vh;
+            padding: 30px 20px; 
+            color: #1e293b; 
+            position: relative;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+        
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            margin-bottom: 25px;
+            padding: 10px 0;
+            gap: 15px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            z-index: 2;
+            flex: 1;
+            justify-content: flex-start;
+        }
+
+        .header-left select {
+            width: auto;
+            padding: 8px 12px;
+            font-weight: 700;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #0f172a;
+            cursor: pointer;
+            border: 1px solid #cbd5e1;
+            outline: none;
+            font-size: 13px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .main-title {
+            color: #ffffff; 
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            text-align: center;
+            flex: 2;
+            white-space: nowrap;
+        }
+
+        .header-right {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+            z-index: 2;
+        }
+
+        .logo-box {
+            background: #ffffff;
+            padding: 6px 14px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-img {
+            height: 42px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 22px; }
+        .stat-card { 
+            background: rgba(241, 245, 249, 0.95); 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08); 
+            border: 1px solid #94a3b8;
+            border-left: 5px solid #2563eb; 
+            transition: transform 0.2s ease;
+        }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-card.orange { border-left-color: #d97706; }
+        .stat-card.green { border-left-color: #16a34a; }
+        .stat-card.purple { border-left-color: #7c3aed; }
+        .stat-title { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.6px; }
+        .stat-value { font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 6px; }
+
+        .card { 
+            background: rgba(241, 245, 249, 0.95); 
+            padding: 24px; 
+            border-radius: 14px; 
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.07); 
+            border: 1px solid #94a3b8;
+            margin-bottom: 22px; 
+        }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; }
+        .card h2 { color: #0f172a; font-size: 17px; font-weight: 700; }
+
+        .search-card { 
+            background: #e2e8f0; 
+            border: 1px solid #64748b; 
+            padding: 16px 20px; 
+            margin-bottom: 22px; 
+            border-radius: 12px; 
+        }
+        .search-card h2 { font-size: 14px; margin-bottom: 10px; color: #1e3a8a; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+        .full-width { grid-column: 1 / -1; }
+
+        label { font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 5px; }
+        
+        input, select, textarea { 
+            width: 100%; 
+            padding: 9px 12px; 
+            border: 1px solid #64748b; 
+            border-radius: 8px; 
+            font-size: 13px; 
+            outline: none; 
+            background: #ffffff; 
+            color: #0f172a;
+            transition: all 0.2s ease;
+        }
+        input:focus, select:focus, textarea:focus { 
+            border-color: #2563eb; 
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+
+        .input-group { display: flex; gap: 6px; }
+        .input-group select.code-box { flex: 0 0 68px; padding: 8px 4px; }
+        .input-group input.std-box { flex: 0 0 70px; padding: 8px 6px; }
+        .input-group input { flex: 1; }
+
+        #country { width: 100%; max-width: 210px; }
+
+        .btn-submit { 
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            font-weight: 700; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            font-size: 14px; 
+            box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);
+        }
+        .btn-submit:hover { transform: translateY(-1px); }
+        .btn-excel { 
+            background: linear-gradient(135deg, #15803d 0%, #166534 100%); 
+            color: white; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 12px; 
+            font-weight: bold; 
+        }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; }
+        th, td { border-bottom: 1px solid #cbd5e1; padding: 12px 10px; text-align: left; font-size: 13px; }
+        th { background: #cbd5e1; color: #0f172a; font-weight: 700; border-top: 1px solid #cbd5e1; }
+        tr:hover td { background-color: #cbd5e1; }
+
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; }
+        .badge-New { background: #bae6fd; color: #0369a1; }
+        .badge-Contacted { background: #fed7aa; color: #c2410c; }
+        .badge-ProposalSent { background: #e9d5ff; color: #6b21a8; }
+        .badge-Negotiation { background: #99f6e4; color: #0f766e; }
+        .badge-WorkStarted { background: #bbf7d0; color: #15803d; }
+        .badge-Closed { background: #a7f3d0; color: #047857; }
+        .badge-Lost { background: #fecdd3; color: #be123c; }
+
+        .btn-action { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; color: white; font-size: 11px; font-weight: 600; }
+        .btn-note { background: #16a34a; margin-right: 2px; }
+        .btn-view { background: #2563eb; }
+        .btn-edit { background: #d97706; margin-left: 2px; }
+        .btn-delete { background: #dc2626; margin-left: 2px; }
+
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 100; }
+        .modal-content { background: #edf2f7; width: 70%; max-width: 800px; margin: 40px auto; padding: 24px; border-radius: 14px; max-height: 85vh; overflow-y: auto; border: 1px solid #94a3b8; }
+        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        .modal-grid p { background: #e2e8f0; padding: 10px; border-radius: 6px; font-size: 13px; border: 1px solid #cbd5e1; }
+        .close-btn { background: #475569; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-weight: 600; }
+
+        @media (max-width: 900px) {
+            .header-container { flex-direction: column; text-align: center; }
+            .header-left, .header-right { justify-content: center; }
+            .main-title { margin: 10px 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-container">
+        <div class="header-left">
+            <select id="userRoleSelect" onchange="handleRoleChange()">
+                <option value="User">User Mode</option>
+                <option value="Admin">Admin Mode</option>
+                <option value="ChangePIN">🔑 Change Admin PIN</option>
+            </select>
+        </div>
+
+        <h1 class="main-title">Syenergy Environics CRM Advance</h1>
+
+        <div class="header-right">
+            <div class="logo-box">
+                <svg class="logo-img" viewBox="0 0 450 120" xmlns="http://www.w3.org/2000/svg">
+                    <text x="10" y="72" font-family="'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="58" fill="#1b3888" letter-spacing="-1.5">environics</text>
+                    <text x="12" y="98" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="16" fill="#1b3888" letter-spacing="2.2">ENERGIZE. ENHANCE. EXCEL.</text>
+                    <g transform="translate(325, 10)">
+                        <rect x="36" y="5" width="16" height="30" rx="3" fill="#8cc63f" />
+                        <rect x="0" y="32" width="48" height="15" rx="3" fill="#8cc63f" transform="rotate(20 24 40)" />
+                        <rect x="42" y="32" width="48" height="15" rx="3" fill="#8cc63f" transform="rotate(-20 66 40)" />
+                        <path d="M22 88 L44 48 L66 88 L52 88 L44 70 L36 88 Z" fill="#1b3888" />
+                    </g>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-title">Total Leads</div>
+            <div class="stat-value" id="statTotal">0</div>
+        </div>
+        <div class="stat-card orange">
+            <div class="stat-title">Active Leads</div>
+            <div class="stat-value" id="statActive">0</div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-title">Deals Closed</div>
+            <div class="stat-value" id="statClosed">0</div>
+        </div>
+        <div class="stat-card purple">
+            <div class="stat-title">Total Value (Agreed)</div>
+            <div class="stat-value" id="statValue">₹0</div>
+        </div>
+    </div>
+
+    <div class="card search-card">
+        <h2>🔍 Quick Search Lead</h2>
+        <div style="display: flex; gap: 8px;">
+            <input type="text" id="searchInput" placeholder="Search by Client Name or Contact Person..." oninput="searchLead()" style="padding: 9px 12px;">
+            <button type="button" onclick="clearSearch()" style="background: #475569; color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight:600;">Clear Search</button>
+        </div>
+        <div id="searchResults" style="margin-top: 8px; max-height: 150px; overflow-y: auto;"></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 id="formHeader">Add New Lead / Customer</h2>
+        </div>
+        <form id="crmForm">
+            <div class="form-grid">
+                <div>
+                    <label>Client / Company Name *</label>
+                    <input type="text" id="clientName" required placeholder="e.g. ABC Pvt Ltd">
+                </div>
+                <div>
+                    <label>Contact Person Name *</label>
+                    <input type="text" id="personName" required placeholder="e.g. Rahul Sharma">
+                </div>
+                <div>
+                    <label>Designation</label>
+                    <select id="designation">
+                        <option value="">-- Select Designation --</option>
+                        <option value="Managing Director">Managing Director</option>
+                        <option value="CEO / Founder">CEO / Founder</option>
+                        <option value="Director">Director</option>
+                        <option value="General Manager">General Manager</option>
+                        <option value="Manager">Manager</option>
+                        <option value="Purchase Head">Purchase Head</option>
+                        <option value="Operations Head">Operations Head</option>
+                        <option value="Technical Director">Technical Director</option>
+                        <option value="VP / Head of Sales">VP / Head of Sales</option>
+                        <option value="Partner / Owner">Partner / Owner</option>
+                        <option value="Executive">Executive</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Country</label>
+                    <select id="country" onchange="autoPickCountryCode()"></select>
+                </div>
+                <div>
+                    <label>Mobile Number *</label>
+                    <div class="input-group">
+                        <select id="countryCode" class="code-box" required></select>
+                        <input type="tel" id="mobile" required placeholder="Mobile Number">
+                    </div>
+                </div>
+                <div>
+                    <label>Work Tele No.</label>
+                    <div class="input-group">
+                        <input type="text" id="stdCode" class="std-box" placeholder="STD">
+                        <input type="text" id="workTel" placeholder="Landline / Office No">
+                    </div>
+                </div>
+                <div>
+                    <label>Email ID</label>
+                    <input type="email" id="email" placeholder="name@company.com">
+                </div>
+                <div>
+                    <label>Address</label>
+                    <input type="text" id="address" placeholder="Office Address">
+                </div>
+                <div>
+                    <label>City</label>
+                    <input type="text" id="city" placeholder="City Name">
+                </div>
+                <div>
+                    <label>Source of Lead / Meeting</label>
+                    <select id="source">
+                        <option value="">-- Select Source --</option>
+                        <option value="Event">Event</option>
+                        <option value="Roundtable Meeting">Roundtable Meeting</option>
+                        <option value="Exhibition / Trade Show">Exhibition / Trade Show</option>
+                        <option value="Networking Meet">Networking Meet</option>
+                        <option value="Direct One-on-One Meeting">Direct One-on-One Meeting</option>
+                        <option value="Webinar / Online Conference">Webinar / Online Conference</option>
+                        <option value="Website">Website</option>
+                        <option value="Google Search">Google Search</option>
+                        <option value="LinkedIn">LinkedIn</option>
+                        <option value="Referral">Referral / Recommendation</option>
+                        <option value="Cold Call">Cold Call</option>
+                        <option value="Social Media">Social Media</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Lead Stage / Status</label>
+                    <select id="status">
+                        <option value="New">New Lead</option>
+                        <option value="Contacted">Contacted</option>
+                        <option value="Proposal Sent">Proposal Sent</option>
+                        <option value="Negotiation">Negotiation</option>
+                        <option value="Work Started">Work Started</option>
+                        <option value="Closed">Deal Closed (Won)</option>
+                        <option value="Lost">Deal Lost</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Original Proposal (₹)</label>
+                    <input type="text" id="proposal" placeholder="0" oninput="handlePriceInput(this)">
+                </div>
+                <div>
+                    <label>Final Agreed Amount (₹)</label>
+                    <input type="text" id="agreed" placeholder="0" oninput="handlePriceInput(this)">
+                </div>
+                <div>
+                    <label>Discount Given (₹)</label>
+                    <input type="text" id="discountAmt" placeholder="Auto-calculated" readonly style="background:#e2e8f0;">
+                </div>
+                <div>
+                    <label>Discount %</label>
+                    <input type="text" id="discountPer" placeholder="Auto-calculated" readonly style="background:#e2e8f0;">
+                </div>
+                <div class="full-width">
+                    <label>Work Progress / Closing Summary</label>
+                    <textarea id="summary" rows="2" placeholder="Work status or initial discussion details..."></textarea>
+                </div>
+                <div class="full-width">
+                    <label>Negotiation Remarks</label>
+                    <textarea id="remarks" rows="2" placeholder="Price negotiation or special conditions..."></textarea>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="submit" id="submitBtn" class="btn-submit" style="flex: 1;">Save / Update Lead</button>
+                <button type="button" id="cancelEditBtn" onclick="resetFormState()" style="display:none; background: #64748b; color: white; border: none; padding: 10px; font-weight: bold; border-radius: 8px; cursor: pointer;">Cancel Edit</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Saved Leads List (Live Cloud Synced)</h2>
+            <button class="btn-excel" onclick="exportToCSV()">📥 Export to Excel</button>
+        </div>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Client / Company</th>
+                        <th>Person & Designation</th>
+                        <th>Source</th>
+                        <th>Status</th>
+                        <th>Agreed Amt</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="leadTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="followUpModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <button class="close-btn" onclick="closeFollowUpModal()">✕ Close</button>
+        <h2 style="color:#16a34a; margin-bottom: 15px;">💬 Add Follow-up Note</h2>
+        <form id="followUpForm" onsubmit="saveFollowUp(event)">
+            <input type="hidden" id="followUpLeadId">
+            
+            <div style="margin-bottom: 12px;">
+                <label>Updated Lead Status</label>
+                <select id="fuStatus" required>
+                    <option value="New">New Lead</option>
+                    <option value="Contacted">Contacted</option>
+                    <option value="Proposal Sent">Proposal Sent</option>
+                    <option value="Negotiation">Negotiation</option>
+                    <option value="Work Started">Work Started</option>
+                    <option value="Closed">Deal Closed (Won)</option>
+                    <option value="Lost">Deal Lost</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label>Team Member Name</label>
+                <input type="text" id="fuMember" placeholder="e.g. Amit Kumar" required>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label>Discussion Details</label>
+                <textarea id="fuNote" rows="3" placeholder="Discussion summary, client comments, or updates..." required></textarea>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label>Next Call / Meeting Date & Time</label>
+                <input type="text" id="fuNextDate" placeholder="e.g. 25th July, 3:00 PM">
+            </div>
+
+            <button type="submit" class="btn-submit" style="width:100%;">Save Follow-up</button>
+        </form>
+    </div>
+</div>
+
+<div id="viewModal" class="modal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeModal()">✕ Close</button>
+        <h2 id="modalClientTitle" style="color:#0f172a;">Lead Details</h2>
+        <div class="modal-grid" id="modalDetails"></div>
+    </div>
+</div>
+
+<script>
+    // -------------------------------------------------------------
+    // 🔥 FIREBASE CONFIGURATION (आपकी नई Keys कनेक्टेड हैं)
+    // -------------------------------------------------------------
+    const firebaseConfig = {
+        apiKey: "AIzaSyDsFYpk4qCiE4pSsju8h1Ms_lElxTu8ocY",
+        authDomain: "environics-crm.firebaseapp.com",
+        databaseURL: "https://environics-crm-default-rtdb.firebaseio.com",
+        projectId: "environics-crm",
+        storageBucket: "environics-crm.firebasestorage.app",
+        messagingSenderId: "294154079975",
+        appId: "1:294154079975:web:3c8f6cc233089c30829c42"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const leadsRef = db.ref('leads');
+
+    let leadsMap = {}; 
+    let leads = [];    
+    let editingLeadId = null;
+
+    // Realtime Database Listener
+    leadsRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        leadsMap = data || {};
+        leads = [];
+        for (let id in leadsMap) {
+            leads.push({ id: id, ...leadsMap[id] });
+        }
+        renderLeads();
+    });
+
+    function getAdminPIN() {
+        return localStorage.getItem('crm_admin_pin') || "1234";
+    }
+
+    function changeAdminPIN() {
+        const currentPIN = getAdminPIN();
+        const oldEntered = prompt("🔑 Enter Current Admin PIN:");
+        if (oldEntered === currentPIN) {
+            const newPIN = prompt("✨ Enter New Admin PIN:");
+            if (newPIN && newPIN.trim() !== "") {
+                localStorage.setItem('crm_admin_pin', newPIN.trim());
+                alert("✅ Admin PIN changed successfully!");
+            } else {
+                alert("❌ PIN cannot be empty.");
+            }
+        } else if (oldEntered !== null) {
+            alert("❌ Incorrect Current PIN!");
+        }
+    }
+
+    let currentRole = "User";
+
+    function handleRoleChange() {
+        const select = document.getElementById('userRoleSelect');
+        const selected = select.value;
+
+        if (selected === "ChangePIN") {
+            changeAdminPIN();
+            select.value = currentRole;
+            return;
+        }
+
+        if (selected === "Admin") {
+            const pass = prompt("🔐 Enter Admin Passcode:");
+            if (pass === getAdminPIN()) {
+                currentRole = "Admin";
+                alert("✅ Admin Mode Activated.");
+            } else {
+                alert("❌ Incorrect Admin PIN!");
+                select.value = "User";
+                currentRole = "User";
+            }
+        } else {
+            currentRole = "User";
+        }
+        renderLeads();
+    }
+
+    const countryData = [
+        { name: "Afghanistan", code: "+93" }, { name: "Albania", code: "+355" }, { name: "Algeria", code: "+213" },
+        { name: "Andorra", code: "+376" }, { name: "Angola", code: "+244" }, { name: "Argentina", code: "+54" },
+        { name: "Armenia", code: "+374" }, { name: "Australia", code: "+61" }, { name: "Austria", code: "+43" },
+        { name: "Azerbaijan", code: "+994" }, { name: "Bahamas", code: "+1-242" }, { name: "Bahrain", code: "+973" },
+        { name: "Bangladesh", code: "+880" }, { name: "Barbados", code: "+1-246" }, { name: "Belarus", code: "+375" },
+        { name: "Belgium", code: "+32" }, { name: "Belize", code: "+501" }, { name: "Benin", code: "+229" },
+        { name: "Bhutan", code: "+975" }, { name: "Bolivia", code: "+591" }, { name: "Bosnia & Herzegovina", code: "+387" },
+        { name: "Botswana", code: "+267" }, { name: "Brazil", code: "+55" }, { name: "Brunei", code: "+673" },
+        { name: "Bulgaria", code: "+359" }, { name: "Burkina Faso", code: "+226" }, { name: "Burundi", code: "+257" },
+        { name: "Cambodia", code: "+855" }, { name: "Cameroon", code: "+237" }, { name: "Canada", code: "+1" },
+        { name: "Cape Verde", code: "+238" }, { name: "Central African Republic", code: "+236" }, { name: "Chad", code: "+235" },
+        { name: "Chile", code: "+56" }, { name: "China", code: "+86" }, { name: "Colombia", code: "+57" },
+        { name: "Comoros", code: "+269" }, { name: "Congo - Brazzaville", code: "+242" }, { name: "Congo - Kinshasa", code: "+243" },
+        { name: "Costa Rica", code: "+506" }, { name: "Croatia", code: "+385" }, { name: "Cuba", code: "+53" },
+        { name: "Cyprus", code: "+357" }, { name: "Czech Republic", code: "+420" }, { name: "Denmark", code: "+45" },
+        { name: "Djibouti", code: "+253" }, { name: "Dominica", code: "+1-767" }, { name: "Dominican Republic", code: "+1-809" },
+        { name: "Ecuador", code: "+593" }, { name: "Egypt", code: "+20" }, { name: "El Salvador", code: "+503" },
+        { name: "Equatorial Guinea", code: "+240" }, { name: "Eritrea", code: "+291" }, { name: "Estonia", code: "+372" },
+        { name: "Eswatini", code: "+268" }, { name: "Ethiopia", code: "+251" }, { name: "Fiji", code: "+679" },
+        { name: "Finland", code: "+358" }, { name: "France", code: "+33" }, { name: "Gabon", code: "+241" },
+        { name: "Gambia", code: "+220" }, { name: "Georgia", code: "+995" }, { name: "Germany", code: "+49" },
+        { name: "Ghana", code: "+233" }, { name: "Greece", code: "+30" }, { name: "Grenada", code: "+1-473" },
+        { name: "Guatemala", code: "+502" }, { name: "Guinea", code: "+224" }, { name: "Guinea-Bissau", code: "+245" },
+        { name: "Guyana", code: "+592" }, { name: "Haiti", code: "+509" }, { name: "Honduras", code: "+504" },
+        { name: "Hungary", code: "+36" }, { name: "Iceland", code: "+354" }, { name: "India", code: "+91" },
+        { name: "Indonesia", code: "+62" }, { name: "Iran", code: "+98" }, { name: "Iraq", code: "+964" },
+        { name: "Ireland", code: "+353" }, { name: "Israel", code: "+972" }, { name: "Italy", code: "+39" },
+        { name: "Ivory Coast", code: "+225" }, { name: "Jamaica", code: "+1-876" }, { name: "Japan", code: "+81" },
+        { name: "Jordan", code: "+962" }, { name: "Kazakhstan", code: "+7" }, { name: "Kenya", code: "+254" },
+        { name: "Kiribati", code: "+686" }, { name: "Kuwait", code: "+965" }, { name: "Kyrgyzstan", code: "+996" },
+        { name: "Laos", code: "+856" }, { name: "Latvia", code: "+371" }, { name: "Lebanon", code: "+961" },
+        { name: "Lesotho", code: "+266" }, { name: "Liberia", code: "+231" }, { name: "Libya", code: "+218" },
+        { name: "Liechtenstein", code: "+423" }, { name: "Lithuania", code: "+370" }, { name: "Luxembourg", code: "+352" },
+        { name: "Madagascar", code: "+261" }, { name: "Malawi", code: "+265" }, { name: "Malaysia", code: "+60" },
+        { name: "Maldives", code: "+960" }, { name: "Mali", code: "+223" }, { name: "Malta", code: "+356" },
+        { name: "Marshall Islands", code: "+692" }, { name: "Mauritania", code: "+222" }, { name: "Mauritius", code: "+230" },
+        { name: "Mexico", code: "+52" }, { name: "Micronesia", code: "+691" }, { name: "Moldova", code: "+373" },
+        { name: "Monaco", code: "+377" }, { name: "Mongolia", code: "+976" }, { name: "Montenegro", code: "+382" },
+        { name: "Morocco", code: "+212" }, { name: "Mozambique", code: "+258" }, { name: "Myanmar (Burma)", code: "+95" },
+        { name: "Namibia", code: "+264" }, { name: "Nauru", code: "+674" }, { name: "Nepal", code: "+977" },
+        { name: "Netherlands", code: "+31" }, { name: "New Zealand", code: "+64" }, { name: "Nicaragua", code: "+505" },
+        { name: "Niger", code: "+227" }, { name: "Nigeria", code: "+234" }, { name: "North Korea", code: "+850" },
+        { name: "North Macedonia", code: "+389" }, { name: "Norway", code: "+47" }, { name: "Oman", code: "+968" },
+        { name: "Pakistan", code: "+92" }, { name: "Palau", code: "+680" }, { name: "Palestine", code: "+970" },
+        { name: "Panama", code: "+507" }, { name: "Papua New Guinea", code: "+675" }, { name: "Paraguay", code: "+595" },
+        { name: "Peru", code: "+51" }, { name: "Philippines", code: "+63" }, { name: "Poland", code: "+48" },
+        { name: "Portugal", code: "+351" }, { name: "Qatar", code: "+974" }, { name: "Romania", code: "+40" },
+        { name: "Russia", code: "+7" }, { name: "Rwanda", code: "+250" }, { name: "Saint Kitts & Nevis", code: "+1-869" },
+        { name: "Saint Lucia", code: "+1-758" }, { name: "Saint Vincent", code: "+1-784" }, { name: "Samoa", code: "+685" },
+        { name: "San Marino", code: "+378" }, { name: "Sao Tome & Principe", code: "+239" }, { name: "Saudi Arabia", code: "+966" },
+        { name: "Senegal", code: "+221" }, { name: "Serbia", code: "+381" }, { name: "Seychelles", code: "+248" },
+        { name: "Sierra Leone", code: "+232" }, { name: "Singapore", code: "+65" }, { name: "Slovakia", code: "+421" },
+        { name: "Slovenia", code: "+386" }, { name: "Solomon Islands", code: "+677" }, { name: "Somalia", code: "+252" },
+        { name: "South Africa", code: "+27" }, { name: "South Korea", code: "+82" }, { name: "South Sudan", code: "+211" },
+        { name: "Spain", code: "+34" }, { name: "Sri Lanka", code: "+94" }, { name: "Sudan", code: "+249" },
+        { name: "Suriname", code: "+597" }, { name: "Sweden", code: "+46" }, { name: "Switzerland", code: "+41" },
+        { name: "Syria", code: "+963" }, { name: "Taiwan", code: "+886" }, { name: "Tajikistan", code: "+992" },
+        { name: "Tanzania", code: "+255" }, { name: "Thailand", code: "+66" }, { name: "Timor-Leste", code: "+670" },
+        { name: "Togo", code: "+228" }, { name: "Tonga", code: "+676" }, { name: "Trinidad & Tobago", code: "+1-868" },
+        { name: "Tunisia", code: "+216" }, { name: "Turkey", code: "+90" }, { name: "Turkmenistan", code: "+993" },
+        { name: "Tuvalu", code: "+688" }, { name: "Uganda", code: "+256" }, { name: "Ukraine", code: "+380" },
+        { name: "United Arab Emirates", code: "+971" }, { name: "United Kingdom", code: "+44" }, { name: "United States", code: "+1" },
+        { name: "Uruguay", code: "+598" }, { name: "Uzbekistan", code: "+998" }, { name: "Vanuatu", code: "+678" },
+        { name: "Vatican City", code: "+379" }, { name: "Venezuela", code: "+58" }, { name: "Vietnam", code: "+84" },
+        { name: "Yemen", code: "+967" }, { name: "Zambia", code: "+260" }, { name: "Zimbabwe", code: "+263" }
+    ];
+
+    function populateCountries() {
+        const countrySelect = document.getElementById('country');
+        const codeSelect = document.getElementById('countryCode');
+        countrySelect.innerHTML = '';
+        codeSelect.innerHTML = '';
+
+        countryData.forEach(c => {
+            const optC = document.createElement('option');
+            optC.value = c.name;
+            optC.innerText = c.name; 
+            countrySelect.appendChild(optC);
+
+            const optCode = document.createElement('option');
+            optCode.value = c.code;
+            optCode.innerText = c.code; 
+            codeSelect.appendChild(optCode);
+        });
+
+        countrySelect.value = "India";
+        codeSelect.value = "+91";
+    }
+
+    function autoPickCountryCode() {
+        const selectedCountry = document.getElementById('country').value;
+        const matched = countryData.find(c => c.name === selectedCountry);
+        if (matched) {
+            document.getElementById('countryCode').value = matched.code;
+        }
+    }
+
+    const form = document.getElementById('crmForm');
+
+    function parseNumber(val) {
+        if (!val) return 0;
+        return parseFloat(val.toString().replace(/,/g, '')) || 0;
+    }
+
+    function formatNumber(num) {
+        if (!num && num !== 0) return '';
+        const parts = num.toString().split('.');
+        const lastThree = parts[0].substring(parts[0].length - 3);
+        const otherNumbers = parts[0].substring(0, parts[0].length - 3);
+        const formatted = otherNumbers != '' ? otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," + lastThree : lastThree;
+        return parts.length > 1 ? formatted + '.' + parts[1] : formatted;
+    }
+
+    function handlePriceInput(input) {
+        let cleanVal = input.value.replace(/[^0-9.]/g, '');
+        if (cleanVal) {
+            const num = parseFloat(cleanVal);
+            input.value = formatNumber(num);
+        } else {
+            input.value = '';
+        }
+        calculateDiscount();
+    }
+
+    function calculateDiscount() {
+        const prop = parseNumber(document.getElementById('proposal').value);
+        const agreed = parseNumber(document.getElementById('agreed').value);
+        
+        if (prop > 0 && agreed >= 0) {
+            const discount = prop - agreed;
+            const percentage = (discount / prop) * 100;
+            document.getElementById('discountAmt').value = discount > 0 ? formatNumber(discount.toFixed(2)) : '0';
+            document.getElementById('discountPer').value = percentage > 0 ? percentage.toFixed(1) + '%' : '0%';
+        } else {
+            document.getElementById('discountAmt').value = '';
+            document.getElementById('discountPer').value = '';
+        }
+    }
+
+    function searchLead() {
+        const query = document.getElementById('searchInput').value.toLowerCase().trim();
+        const resultsDiv = document.getElementById('searchResults');
+        resultsDiv.innerHTML = '';
+        if (query === '') return;
+
+        const filtered = leads.filter(l => 
+            (l.clientName && l.clientName.toLowerCase().includes(query)) ||
+            (l.personName && l.personName.toLowerCase().includes(query))
+        );
+
+        if (filtered.length === 0) {
+            resultsDiv.innerHTML = '<p style="color:#dc2626; font-size:12px; padding:4px;">No record found.</p>';
+            return;
+        }
+
+        filtered.forEach(l => {
+            const itemDiv = document.createElement('div');
+            itemDiv.style.cssText = "background:#cbd5e1; padding:8px 12px; margin-bottom:4px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; border:1px solid #94a3b8; font-size:13px;";
+            
+            const editButtonHTML = `<button type="button" onclick="loadLeadToForm('${l.id}')" style="background:#d97706; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">Edit Lead</button>`;
+
+            itemDiv.innerHTML = `
+                <span><strong>${l.clientName}</strong> (${l.personName}) - <small style="color:#334155;">${l.status}</small></span>
+                ${editButtonHTML}
+            `;
+            resultsDiv.appendChild(itemDiv);
+        });
+    }
+
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchResults').innerHTML = '';
+    }
+
+    function loadLeadToForm(id) {
+        const l = leadsMap[id];
+        if (!l) return;
+        
+        editingLeadId = id;
+        document.getElementById('clientName').value = l.clientName || '';
+        document.getElementById('personName').value = l.personName || '';
+        document.getElementById('designation').value = l.designation || '';
+        document.getElementById('country').value = l.country || 'India';
+        document.getElementById('countryCode').value = l.countryCode || '+91';
+        document.getElementById('mobile').value = l.mobile || '';
+        document.getElementById('email').value = l.email || '';
+        document.getElementById('stdCode').value = l.stdCode || '';
+        document.getElementById('workTel').value = l.workTel || '';
+        document.getElementById('address').value = l.address || '';
+        document.getElementById('city').value = l.city || '';
+        document.getElementById('source').value = l.source || '';
+        document.getElementById('status').value = l.status || 'New';
+        document.getElementById('proposal').value = l.proposal ? formatNumber(l.proposal) : '';
+        document.getElementById('agreed').value = l.agreed ? formatNumber(l.agreed) : '';
+        document.getElementById('discountAmt').value = l.discountAmt ? formatNumber(l.discountAmt) : '';
+        document.getElementById('discountPer').value = l.discountPer || '';
+        document.getElementById('summary').value = l.summary || '';
+        document.getElementById('remarks').value = l.remarks || '';
+
+        document.getElementById('formHeader').innerText = "✏️ Edit Lead Details";
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerText = "Update Lead";
+        submitBtn.style.background = "#d97706";
+        document.getElementById('cancelEditBtn').style.display = "block";
+        document.getElementById('crmForm').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function resetFormState() {
+        editingLeadId = null;
+        form.reset();
+        document.getElementById('country').value = "India";
+        document.getElementById('countryCode').value = "+91";
+        document.getElementById('formHeader').innerText = "Add New Lead / Customer";
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerText = "Save / Update Lead";
+        submitBtn.style.background = "linear-gradient(135deg, #16a34a 0%, #15803d 100%)";
+        document.getElementById('cancelEditBtn').style.display = "none";
+        clearSearch();
+    }
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const existingFollowups = editingLeadId && leadsMap[editingLeadId] ? (leadsMap[editingLeadId].followUps || []) : [];
+
+        const leadData = {
+            clientName: document.getElementById('clientName').value,
+            personName: document.getElementById('personName').value,
+            designation: document.getElementById('designation').value,
+            countryCode: document.getElementById('countryCode').value,
+            mobile: document.getElementById('mobile').value,
+            email: document.getElementById('email').value,
+            stdCode: document.getElementById('stdCode').value,
+            workTel: document.getElementById('workTel').value,
+            address: document.getElementById('address').value,
+            city: document.getElementById('city').value,
+            country: document.getElementById('country').value,
+            source: document.getElementById('source').value,
+            status: document.getElementById('status').value,
+            proposal: parseNumber(document.getElementById('proposal').value),
+            agreed: parseNumber(document.getElementById('agreed').value),
+            discountAmt: parseNumber(document.getElementById('discountAmt').value),
+            discountPer: document.getElementById('discountPer').value,
+            summary: document.getElementById('summary').value,
+            remarks: document.getElementById('remarks').value,
+            followUps: existingFollowups
+        };
+
+        if (editingLeadId) {
+            leadsRef.child(editingLeadId).update(leadData, (err) => {
+                if (!err) alert("✅ Lead Updated on Cloud!");
+            });
+        } else {
+            leadsRef.push(leadData, (err) => {
+                if (!err) alert("✅ New Lead Saved to Cloud!");
+            });
+        }
+
+        resetFormState();
+    });
+
+    function updateStats() {
+        document.getElementById('statTotal').innerText = leads.length;
+        const activeCount = leads.filter(l => l.status !== 'Closed' && l.status !== 'Lost').length;
+        document.getElementById('statActive').innerText = activeCount;
+        const closedCount = leads.filter(l => l.status === 'Closed').length;
+        document.getElementById('statClosed').innerText = closedCount;
+        const totalVal = leads.reduce((acc, curr) => acc + (parseFloat(curr.agreed) || parseFloat(curr.proposal) || 0), 0);
+        document.getElementById('statValue').innerText = '₹' + formatNumber(totalVal);
+    }
+
+    function renderLeads() {
+        const tbody = document.getElementById('leadTableBody');
+        tbody.innerHTML = '';
+        if (leads.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding: 20px;">No leads recorded yet.</td></tr>`;
+            updateStats();
+            return;
+        }
+
+        leads.forEach((lead) => {
+            const badgeClass = (lead.status || 'New').replace(/\s+/g, '');
+            
+            const adminActionsHTML = (currentRole === "Admin") 
+                ? `<button class="btn-action btn-edit" onclick="loadLeadToForm('${lead.id}')">Edit</button>
+                   <button class="btn-action btn-delete" onclick="deleteLead('${lead.id}')">Delete</button>` 
+                : '';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${lead.clientName}</strong></td>
+                <td>${lead.personName} <br><small style="color:#475569;">${lead.designation || '-'}</small></td>
+                <td><small style="background:#bae6fd; color:#0369a1; padding:3px 8px; border-radius:4px; font-weight:600;">${lead.source || 'N/A'}</small></td>
+                <td><span class="badge badge-${badgeClass}">${lead.status}</span></td>
+                <td>₹${formatNumber(lead.agreed || lead.proposal || 0)}</td>
+                <td>
+                    <button class="btn-action btn-note" onclick="openFollowUpModal('${lead.id}')">+ Note</button>
+                    <button class="btn-action btn-view" onclick="viewLeadDetails('${lead.id}')">View</button>
+                    ${adminActionsHTML}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        updateStats();
+    }
+
+    function openFollowUpModal(id) {
+        document.getElementById('followUpLeadId').value = id;
+        document.getElementById('fuStatus').value = leadsMap[id].status || 'New';
+        document.getElementById('fuMember').value = '';
+        document.getElementById('fuNote').value = '';
+        document.getElementById('fuNextDate').value = '';
+        document.getElementById('followUpModal').style.display = 'block';
+    }
+
+    function closeFollowUpModal() {
+        document.getElementById('followUpModal').style.display = 'none';
+    }
+
+    function saveFollowUp(e) {
+        e.preventDefault();
+        const id = document.getElementById('followUpLeadId').value;
+        const newStatus = document.getElementById('fuStatus').value;
+        const member = document.getElementById('fuMember').value.trim();
+        const note = document.getElementById('fuNote').value.trim();
+        const nextDate = document.getElementById('fuNextDate').value.trim();
+
+        const currentFollowups = leadsMap[id].followUps || [];
+
+        const newLog = {
+            date: new Date().toLocaleString('en-IN'),
+            member: member || 'Team Member',
+            status: newStatus,
+            note: note,
+            nextDate: nextDate || 'Not Specified'
+        };
+
+        currentFollowups.push(newLog);
+
+        leadsRef.child(id).update({
+            status: newStatus,
+            followUps: currentFollowups
+        }, (err) => {
+            if(!err) alert("✅ Follow-up log saved to Cloud!");
+        });
+
+        closeFollowUpModal();
+    }
+
+    function viewLeadDetails(id) {
+        const l = leadsMap[id];
+        
+        let followUpHTML = "<h3 style='color:#1e3a8a; margin-bottom:12px;'>💬 Follow-up & Discussion History</h3>";
+        if (l.followUps && l.followUps.length > 0) {
+            [...l.followUps].reverse().forEach(f => {
+                followUpHTML += `
+                <div style="background:#e2e8f0; padding:12px; margin-bottom:10px; border-left:4px solid #2563eb; border-radius:8px; border:1px solid #cbd5e1;">
+                    <div style="display:flex; justify-content:space-between; font-size:12px; color:#475569; font-weight:bold;">
+                        <span>📅 ${f.date}</span>
+                        <span>👤 By: ${f.member || 'Team'}</span>
+                    </div>
+                    <div style="margin: 6px 0; font-size:13px;">
+                        <span style="background:#bae6fd; color:#0369a1; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:11px;">Status: ${f.status}</span>
+                    </div>
+                    <span style="font-size:13px; color:#1e293b; display:block; margin-top:4px;"><b>Note:</b> ${f.note}</span>
+                    <small style="color:#dc2626; font-weight:bold; margin-top:6px; display:block;">⏰ Next Follow-up: ${f.nextDate}</small>
+                </div>`;
+            });
+        } else {
+            followUpHTML += "<span style='color:#64748b; font-size:13px;'>No follow-up records added yet.</span>";
+        }
+
+        document.getElementById('modalClientTitle').innerText = `${l.clientName} - Detailed Profile`;
+        document.getElementById('modalDetails').innerHTML = `
+            <p><b>Contact Person:</b> ${l.personName}</p>
+            <p><b>Designation:</b> ${l.designation || 'N/A'}</p>
+            <p><b>Mobile:</b> ${(l.countryCode || '') + ' ' + l.mobile}</p>
+            <p><b>Email:</b> ${l.email || 'N/A'}</p>
+            <p><b>Work Tele No:</b> ${l.stdCode ? '(' + l.stdCode + ') ' : ''}${l.workTel || 'N/A'}</p>
+            <p><b>Source of Lead:</b> ${l.source || 'N/A'}</p>
+            <p><b>Location:</b> ${l.city ? l.city + ', ' : ''}${l.country}</p>
+            <p><b>Current Stage:</b> <span class="badge badge-${(l.status||'').replace(/\s+/g, '')}">${l.status}</span></p>
+            <p><b>Original Proposal:</b> ₹${formatNumber(l.proposal || 0)}</p>
+            <p><b>Final Agreed:</b> ₹${formatNumber(l.agreed || 0)}</p>
+            <p><b>Discount Given:</b> ₹${formatNumber(l.discountAmt || 0)} (${l.discountPer || '0%'})</p>
+
+            <div style="grid-column: span 2; background:#edf2f7; border:1px solid #cbd5e1; padding:15px; border-radius:10px; margin-top:10px;">
+                ${followUpHTML}
+            </div>
+        `;
+        document.getElementById('viewModal').style.display = 'block';
+    }
+
+    function closeModal() { document.getElementById('viewModal').style.display = 'none'; }
+
+    function deleteLead(id) {
+        if (currentRole !== "Admin") {
+            alert("🛑 Access Denied! Deletion is restricted to Admin Mode only.");
+            return; 
+        }
+
+        if (confirm('Are you sure you want to permanently delete this lead record from Cloud?')) {
+            leadsRef.child(id).remove();
+        }
+    }
+
+    function exportToCSV() {
+        if (leads.length === 0) {
+            alert('No lead records available to export!');
+            return;
+        }
+        
+        let csv = 'Client Name,Person Name,Designation,Mobile,Email,STD Code,Work Tel,Address,City,Country,Source,Status,Original Proposal,Final Agreed,Discount Amt,Discount %,Summary,Remarks\n';
+        
+        leads.forEach(l => {
+            csv += `"${l.clientName}","${l.personName}","${l.designation}","'${(l.countryCode || '') + ' ' + l.mobile}","${l.email}","${l.stdCode}","${l.workTel}","${l.address}","${l.city}","${l.country}","${l.source}","${l.status}","${l.proposal}","${l.agreed}","${l.discountAmt}","${l.discountPer}","${(l.summary || '').replace(/"/g, '""')}","${(l.remarks || '').replace(/"/g, '""')}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `CRM_Leads_Export_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    populateCountries();
+</script>
+
+</body>
+</html>

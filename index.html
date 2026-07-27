@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -38,7 +38,7 @@
         }
 
         .header-left select {
-            width: auto; /* Box text ke hisab se chhota ho jayega */
+            width: auto;
             padding: 8px 12px;
             font-weight: 700;
             border-radius: 8px;
@@ -299,9 +299,10 @@
                 </div>
                 <div>
                     <label>Designation</label>
-                    <select id="designation">
+                    <select id="designation" onchange="checkCustomDesignation()">
                         <option value="">-- Select Designation --</option>
                         <option value="Managing Director">Managing Director</option>
+                        <option value="CEO & MD">CEO & MD</option>
                         <option value="CEO / Founder">CEO / Founder</option>
                         <option value="Director">Director</option>
                         <option value="General Manager">General Manager</option>
@@ -314,6 +315,8 @@
                         <option value="Executive">Executive</option>
                         <option value="Other">Other</option>
                     </select>
+                    <!-- Custom Designation Input -->
+                    <input type="text" id="customDesignation" placeholder="Type new designation..." style="display: none; margin-top: 8px;">
                 </div>
                 <div>
                     <label>Country</label>
@@ -395,7 +398,6 @@
                 </div>
                <div class="full-width">
     <label>Reference</label>
-    <!-- rows को 1 किया गया है और style="height: 40px;" जोड़ा गया है -->
     <textarea id="summary" rows="1" style="height: 40px; min-height: 40px;" placeholder="Enter card origin, basic details, or background info..."></textarea>
 </div>
 <div class="full-width">
@@ -489,6 +491,17 @@
 </div>
 
 <script>
+    function checkCustomDesignation() {
+        const dropdown = document.getElementById('designation');
+        const customInput = document.getElementById('customDesignation');
+        if (dropdown.value === "Other") {
+            customInput.style.display = "block"; 
+        } else {
+            customInput.style.display = "none"; 
+            customInput.value = "";
+        }
+    }
+
     function getAdminPIN() {
         return localStorage.getItem('crm_admin_pin') || "1234";
     }
@@ -509,7 +522,7 @@
         }
     }
 
-    let currentRole = "User"; // Default Security Mode
+    let currentRole = "User";
 
     function handleRoleChange() {
         const select = document.getElementById('userRoleSelect');
@@ -517,7 +530,7 @@
 
         if (selected === "ChangePIN") {
             changeAdminPIN();
-            select.value = currentRole; // Reset dropdown to active mode
+            select.value = currentRole; 
             return;
         }
 
@@ -710,17 +723,26 @@
         });
     }
 
-    function clearSearch() {
-        document.getElementById('searchInput').value = '';
-        document.getElementById('searchResults').innerHTML = '';
-    }
-
     function loadLeadToForm(index) {
         const l = leads[index];
         editIndex = index;
         document.getElementById('clientName').value = l.clientName || '';
         document.getElementById('personName').value = l.personName || '';
-        document.getElementById('designation').value = l.designation || '';
+        
+        const desigSelect = document.getElementById('designation');
+        const customInput = document.getElementById('customDesignation');
+        let optionExists = Array.from(desigSelect.options).some(opt => opt.value === l.designation);
+        
+        if (l.designation && !optionExists) {
+            desigSelect.value = "Other";
+            customInput.style.display = "block";
+            customInput.value = l.designation;
+        } else {
+            desigSelect.value = l.designation || '';
+            customInput.style.display = "none";
+            customInput.value = "";
+        }
+
         document.getElementById('country').value = l.country || 'India';
         document.getElementById('countryCode').value = l.countryCode || '+91';
         document.getElementById('mobile').value = l.mobile || '';
@@ -746,9 +768,16 @@
         document.getElementById('crmForm').scrollIntoView({ behavior: 'smooth' });
     }
 
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchResults').innerHTML = '';
+    }
+
     function resetFormState() {
         editIndex = -1;
         form.reset();
+        document.getElementById('customDesignation').style.display = "none";
+        document.getElementById('customDesignation').value = "";
         document.getElementById('country').value = "India";
         document.getElementById('countryCode').value = "+91";
         document.getElementById('formHeader').innerText = "Add New Lead / Customer";
@@ -765,7 +794,11 @@
             id: editIndex >= 0 ? leads[editIndex].id : Date.now(),
             clientName: document.getElementById('clientName').value,
             personName: document.getElementById('personName').value,
-            designation: document.getElementById('designation').value,
+            
+            designation: document.getElementById('designation').value === "Other" 
+                         ? document.getElementById('customDesignation').value 
+                         : document.getElementById('designation').value,
+
             countryCode: document.getElementById('countryCode').value,
             mobile: document.getElementById('mobile').value,
             email: document.getElementById('email').value,

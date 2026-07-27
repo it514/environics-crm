@@ -788,8 +788,19 @@
         clearSearch();
     }
 
+     // Google Sheet Web App URL
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyPS9PRch0rrWoXN_v6iTCEjm5QpiFxWPjSGqkrZbNAFFjK91I1w9bJljQfNF883zJ3/exec';
+
     form.addEventListener('submit', (e) => {
         e.preventDefault();
+
+        // Button ka text change karein loading dikhane ke liye
+        const submitBtn = document.getElementById('submitBtn');
+        const originalText = submitBtn.innerText;
+        submitBtn.innerText = "Saving to Cloud... ⏳";
+        submitBtn.style.background = "#d97706";
+        submitBtn.disabled = true;
+
         const leadData = {
             id: editIndex >= 0 ? leads[editIndex].id : Date.now(),
             clientName: document.getElementById('clientName').value,
@@ -818,11 +829,35 @@
             followUps: editIndex >= 0 ? (leads[editIndex].followUps || []) : []
         };
 
-        if (editIndex >= 0) { leads[editIndex] = leadData; } 
-        else { leads.push(leadData); }
-
-        saveAndRender();
-        resetFormState();
+        // Data ko Google Sheet par bhej raha hai
+        fetch(scriptURL, {
+            method: 'POST',
+            body: JSON.stringify(leadData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === "success") {
+                alert("✅ Lead successfully saved to Google Cloud!");
+                
+                // Screen par bhi update kar dein
+                if (editIndex >= 0) { leads[editIndex] = leadData; } 
+                else { leads.push(leadData); }
+                saveAndRender();
+                resetFormState();
+            } else {
+                alert("❌ Error saving lead: " + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error!', error.message);
+            alert("❌ Connection Error! Make sure you are connected to the internet.");
+        })
+        .finally(() => {
+            // Button ko wapas normal kar dein
+            submitBtn.innerText = originalText;
+            submitBtn.style.background = "linear-gradient(135deg, #16a34a 0%, #15803d 100%)";
+            submitBtn.disabled = false;
+        });
     });
 
     function updateStats() {

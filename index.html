@@ -393,15 +393,15 @@
                     <label>Discount %</label>
                     <input type="text" id="discountPer" placeholder="Auto-calculated" readonly style="background:#e2e8f0;">
                 </div>
-                <div class="full-width">
+               <div class="full-width">
     <label>Description</label>
-    <textarea id="summary" rows="2" placeholder="Enter card origin, basic details, or background info..."></textarea>
+    <!-- rows को 1 किया गया है और style="height: 40px;" जोड़ा गया है -->
+    <textarea id="summary" rows="1" style="height: 40px; min-height: 40px;" placeholder="Enter card origin, basic details, or background info..."></textarea>
 </div>
-                </div>
-                <div class="full-width">
-                    <label>Negotiation Remarks</label>
-                    <textarea id="remarks" rows="2" placeholder="Price negotiation or special conditions..."></textarea>
-                </div>
+<div class="full-width">
+    <label>Negotiation Remarks</label>
+    <textarea id="remarks" rows="1" style="height: 40px; min-height: 40px;" placeholder="Price negotiation or special conditions..."></textarea>
+</div>
             </div>
             <div style="display: flex; gap: 10px; margin-top: 15px;">
                 <button type="submit" id="submitBtn" class="btn-submit" style="flex: 1;">Save / Update Lead</button>

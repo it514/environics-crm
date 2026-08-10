@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Login</title>
+    <!-- Font Awesome Link for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; margin: 0; padding: 0; }
+        
+        body { 
+            background-color: #0e3768; 
+            min-height: 100vh; 
+            color: #1e293b; 
+            position: relative; 
+            -webkit-user-select: none; 
+            -ms-user-select: none; 
+            user-select: none; 
+        }
+
+        body.admin-mode {
+            -webkit-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
+        }
+
+        /* --- BEAUTIFUL COMPACT LOGIN SCREEN --- */
+        #loginScreen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #0e3768 0%, #1e3a8a 100%);
+            display: flex; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .login-box {
+            background: rgba(255, 255, 255, 0.98); padding: 35px 25px; border-radius: 16px;
+            width: 100%; max-width: 320px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); text-align: center;
+        }
+        .login-box h2 { color: #0f172a; font-size: 22px; margin-bottom: 8px; font-weight: 800; }
+        .login-box p { color: #64748b; font-size: 13px; margin-bottom: 25px; }
+        .login-box select, .login-box input {
+            width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #cbd5e1;
+            border-radius: 8px; font-size: 14px; outline: none; background: #f8fafc; transition: 0.2s;
+        }
+        .login-box select:focus, .login-box input:focus { border-color: #2563eb; background: #fff; }
+        .login-box button {
+            width: 100%; padding: 12px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 15px;
+            cursor: pointer; transition: 0.2s; margin-top: 5px;
+        }
+        .login-box button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3); }
+
+        /* --- MAIN CRM LAYOUT --- */
+        #mainCRM { display: none; padding: 25px 20px; }
+        .container { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+        
+        .header-container { display: flex; align-items: center; justify-content: space-between; position: relative; margin-bottom: 20px; padding: 10px 0; gap: 15px; }
+        .header-left { display: flex; align-items: center; z-index: 2; flex: 1; gap: 10px; }
+        
+         .header-left select { 
+            width: 140px; 
+            padding: 8px 10px; 
+            font-weight: 700; 
+            border-radius: 8px; 
+            background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%); 
+            color: #ffffff; 
+            cursor: pointer; 
+            border: 1px solid #1e3a8a; 
+            outline: none; 
+            font-size: 13px; 
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3); 
+            transition: all 0.3s ease;
+            
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
+        .header-left select:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #172554 100%); 
+        }
+        .header-left select option {
+            background: #ffffff; 
+            color: #0f172a;
+        }
+        .welcome-text { color: #bae6fd; font-size: 13px; font-weight: 600; }
+        .main-title { color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; text-align: center; flex: 2; white-space: nowrap; }
+        .header-right { flex: 1; display: flex; justify-content: flex-end; z-index: 2; }
+        .logo-box { background: #ffffff; padding: 6px 14px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; }
+        .logo-img { height: 42px; width: auto; object-fit: contain; }
+        
+        /* --- STATS & CARDS --- */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 22px; }
+        .stat-card { background: rgba(241, 245, 249, 0.95); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08); border: 1px solid #94a3b8; border-left: 5px solid #2563eb; transition: transform 0.2s ease; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-card.orange { border-left-color: #d97706; }
+        .stat-card.green { border-left-color: #16a34a; }
+        .stat-card.purple { border-left-color: #7c3aed; }
+        .stat-title { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.6px; }
+        .stat-value { font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 6px; }
+
+        .card { background: rgba(241, 245, 249, 0.95); padding: 24px; border-radius: 14px; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.07); border: 1px solid #94a3b8; margin-bottom: 22px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; }
+        .card h2 { color: #0f172a; font-size: 17px; font-weight: 700; }
+
+        .search-card { background: #e2e8f0; border: 1px solid #64748b; padding: 16px 20px; margin-bottom: 22px; border-radius: 12px; }
+        .search-card h2 { font-size: 14px; margin-bottom: 10px; color: #1e3a8a; }
+
+        /* --- PERFECT EQUAL GRID LAYOUT --- */
+        .form-grid { 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 15px; 
+            align-items: start;
+        }
+
+        .half-width { grid-column: span 2; }
+
+        @media (max-width: 1024px) {
+            .form-grid { grid-template-columns: repeat(3, 1fr); }
+            .half-width { grid-column: span 3; }
+        }
+
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: repeat(2, 1fr); }
+            .half-width { grid-column: span 2; }
+        }
+
+        @media (max-width: 480px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .half-width { grid-column: span 1; }
+        }
+
+        label { font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 5px; }
+        
+        input, select, textarea { width: 100%; padding: 9px 12px; border: 1px solid #64748b; border-radius: 8px; font-size: 13px; outline: none; background: #ffffff; color: #0f172a; transition: all 0.2s ease; -webkit-user-select: text !important; user-select: text !important; }
+        input:focus, select:focus, textarea:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); }
+        select:disabled { background: #e2e8f0; color: #64748b; font-weight: bold; cursor: not-allowed; }
+
+        .input-group { display: flex; gap: 6px; }
+        .input-group select.code-box { flex: 0 0 55px; padding: 8px 2px; font-size: 12px; text-align: center; }
+        .input-group input.std-box { flex: 0 0 70px; padding: 8px 6px; }
+        .input-group input { flex: 1; }
+
+        .btn-submit { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; border: none; padding: 12px; font-weight: 700; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 14px; box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25); }
+        .btn-submit:hover { transform: translateY(-1px); }
+        .btn-excel { background: linear-gradient(135deg, #15803d 0%, #166534 100%); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .btn-import { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; }
+        th, td { border-bottom: 1px solid #cbd5e1; padding: 12px 10px; text-align: left; font-size: 13px; }
+        th { background: #cbd5e1; color: #0f172a; font-weight: 700; border-top: 1px solid #cbd5e1; }
+        tr:hover td { background-color: #cbd5e1; }
+
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; }
+        .badge-New { background: #bae6fd; color: #0369a1; }
+        .badge-Contacted { background: #fed7aa; color: #c2410c; }
+        .badge-ProposalSent { background: #e9d5ff; color: #6b21a8; }
+        .badge-Negotiation { background: #99f6e4; color: #0f766e; }
+        .badge-WorkStarted { background: #bbf7d0; color: #15803d; }
+        .badge-Closed { background: #a7f3d0; color: #047857; }
+        .badge-Lost { background: #fecdd3; color: #be123c; }
+
+        .btn-action { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; color: white; font-size: 11px; font-weight: 600; }
+        .btn-note { background: #16a34a; margin-right: 2px; }
+        .btn-view { background: #2563eb; }
+        .btn-delete { background: #dc2626; margin-left: 2px; }
+
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 100; }
+        .modal-content { background: #edf2f7; width: 75%; max-width: 850px; margin: 30px auto; padding: 24px; border-radius: 14px; max-height: 88vh; overflow-y: auto; border: 1px solid #94a3b8; }
+        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        .modal-grid p { background: #ffffff; padding: 10px 12px; border-radius: 6px; font-size: 13px; border: 1px solid #cbd5e1; }
+        .close-btn { background: #475569; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-weight: 600; }
+
+        @media (max-width: 900px) {
+            .header-container { flex-direction: column; text-align: center; }
+            .header-left, .header-right { justify-content: center; }
+            .main-title { margin: 10px 0; }
+            .modal-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+    <div class="login-box">
+        <h2>CRM Login</h2>
+        <p>Please select your profile to continue</p>
+        
+        <form onsubmit="handleLogin(event)">
+            <select id="loginRole" required>
+                <option value="">-- Select Profile --</option>
+                <option value="Admin">Admin (All Access)</option>
+                <option value="Ajay Poddar">Ajay Poddar</option>
+                <option value="Pranav Poddar">Pranav Poddar</option>
+                <option value="Manisha Matanhelia">Manisha Matanhelia</option>
+            </select>
+            <input type="password" id="loginPin" required placeholder="Enter Secret PIN">
+            <button type="submit">Secure Login</button>
+            </form>
+    </div>
+</div>
+
+<!-- MAIN CRM INTERFACE -->
+<div id="mainCRM">
+    <div class="container">
+        <div class="header-container">
+            <div class="header-left">
+                <select id="userMenu" onchange="handleUserMenuAction()">
+                    <option value="">👤 User Profile</option>
+                    <option value="ChangePIN">🔑 Change My Password</option>
+                    
+                    <!-- Admin Only Reset Options -->
+                    <option value="Reset_Ajay Poddar" class="admin-opt" style="display:none;">🛠️ Reset Ajay's Password</option>
+                    <option value="Reset_Pranav Poddar" class="admin-opt" style="display:none;">🛠️ Reset Pranav's Password</option>
+                    <option value="Reset_Manisha Matanhelia" class="admin-opt" style="display:none;">🛠️ Reset Manisha's Password</option>
+                    
+                    <option value="Logout">🚪 Secure Logout</option>
+                </select>
+                <span class="welcome-text" id="welcomeText"></span>
+            </div>
+
+            <h1 class="main-title">Syenergy Environics CRM</h1>
+
+            <div class="header-right">
+                <div class="logo-box">
+                    <svg class="logo-img" viewBox="0 0 450 120" xmlns="http://www.w3.org/2000/svg">
+                        <text x="10" y="72" font-family="'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="58" fill="#1b3888" letter-spacing="-1.5">environics</text>
+                        <text x="12" y="98" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="16" fill="#1b3888" letter-spacing="2.2">ENERGIZE. ENHANCE. EXCEL.</text>
+                        <g transform="translate(325, 10)">
+                            <rect x="36" y="5" width="16" height="30" rx="3" fill="#8cc63f" />
+                            <rect x="0" y="32" width="48" height="15" rx="3" fill="#8cc63f" transform="rotate(20 24 40)" />
+                            <rect x="42" y="32" width="48" height="15" rx="3" fill="#8cc63f" transform="rotate(-20 66 40)" />
+                            <path d="M22 88 L44 48 L66 88 L52 88 L44 70 L36 88 Z" fill="#1b3888" />
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Dashboard -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-title">Total Leads</div>
+                <div class="stat-value" id="statTotal">0</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-title">Active Leads</div>
+                <div class="stat-value" id="statActive">0</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-title">Deals Closed</div>
+                <div class="stat-value" id="statClosed">0</div>
+            </div>
+            <div class="stat-card purple">
+                <div class="stat-title">Total Value (Agreed)</div>
+                <div class="stat-value" id="statValue">₹0</div>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="card search-card">
+            <h2>🔍 Quick Search & Edit Lead</h2>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="searchInput" placeholder="Search by Client Name or Contact Person..." oninput="searchLead()" style="flex: 1;">
+                <button type="button" onclick="clearSearch()" style="width: max-content; white-space: nowrap; background: #475569; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;">Clear Search</button>
+            </div>
+            <div id="searchResults" style="margin-top: 10px; max-height: 200px; overflow-y: auto;"></div>
+        </div>
+
+        <!-- Form Section -->
+        <div class="card">
+            <div class="card-header">
+                <h2 id="formHeader">Add New Lead / Customer</h2>
+            </div> 
+            
+             <form id="crmForm">
+                <div class="form-grid">
+                    <!-- Line 1: 5 Boxes -->
+                    <div>
+                        <label>Card Belongs To (Filter/Director) *</label>
+                         <select id="director" required style="border-color: #2563eb; background-color: #eff6ff;" onchange="filterTable(this.value)">
+                            <option value="All Leads" id="opt-all-dir">-- All Leads (Admin) --</option>
+                            <option value="Ajay Poddar">Ajay Poddar</option>
+                            <option value="Pranav Poddar">Pranav Poddar</option>
+                            <option value="Manisha Matanhelia">Manisha Matanhelia</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Client / Company Name *</label>
+                        <input type="text" id="clientName" required placeholder="e.g. ABC Pvt Ltd" onchange="checkDuplicate()">
+                    </div>
+                    <div>
+                        <label>Contact Person Name *</label>
+                         <input type="text" id="personName" required placeholder="e.g. Rahul Sharma" onchange="checkDuplicate()">
+                    </div>
+                    <div>
+                        <label>Designation</label>
+                        <select id="designation" onchange="checkCustomDesignation()">
+                            <option value="">-- Select Designation --</option>
+                            <option value="Managing Director">Managing Director</option>
+                            <option value="CEO & MD">CEO & MD</option>
+                            <option value="CEO / Founder">CEO / Founder</option>
+                            <option value="Director">Director</option>
+                            <option value="General Manager">General Manager</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Purchase Head">Purchase Head</option>
+                            <option value="Operations Head">Operations Head</option>
+                            <option value="Technical Director">Technical Director</option>
+                            <option value="VP / Head of Sales">VP / Head of Sales</option>
+                            <option value="Partner / Owner">Partner / Owner</option>
+                            <option value="Executive">Executive</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <input type="text" id="customDesignation" placeholder="Type new designation..." style="display: none; margin-top: 8px;">
+                    </div>
+                    <div>
+                        <label>Country</label>
+                        <select id="country" onchange="autoPickCountryCode()"></select>
+                    </div>
+
+                    <!-- Line 2: 5 Boxes -->
+                    <div>
+                        <label>Mobile Number *</label>
+                        <div class="input-group">
+                            <select id="countryCode" class="code-box" required></select>
+                            <input type="tel" id="mobile" required placeholder="Mobile Number">
+                        </div>
+                    </div>
+                    <div>
+                        <label>Work Tele No.</label>
+                        <div class="input-group">
+                            <input type="text" id="stdCode" class="std-box" placeholder="STD">
+                            <input type="text" id="workTel" placeholder="Landline / Office No">
+                        </div>
+                    </div>
+                    <div>
+                        <label>Email ID</label>
+                        <input type="email" id="email" placeholder="name@company.com">
+                    </div>
+                    <div>
+                        <label>Address</label>
+                        <input type="text" id="address" placeholder="Office Address">
+                    </div>
+                    <div>
+                        <label>City</label>
+                        <input type="text" id="city" placeholder="City Name">
+                    </div>
+
+                    <!-- Line 3: 5 Boxes -->
+                    <div>
+                        <label>Source of Lead / Meeting</label>
+                        <select id="source">
+                            <option value="">-- Select Source --</option>
+                            <option value="Event">Event</option>
+                            <option value="Roundtable Meeting">Roundtable Meeting</option>
+                            <option value="Exhibition / Trade Show">Exhibition / Trade Show</option>
+                            <option value="Networking Meet">Networking Meet</option>
+                            <option value="Direct One-on-One Meeting">Direct One-on-One Meeting</option>
+                            <option value="Webinar / Online Conference">Webinar / Online Conference</option>
+                            <option value="Website">Website</option>
+                            <option value="Google Search">Google Search</option>
+                            <option value="LinkedIn">LinkedIn</option>
+                            <option value="Referral">Referral / Recommendation</option>
+                            <option value="Cold Call">Cold Call</option>
+                            <option value="Social Media">Social Media</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Lead Stage / Status</label>
+                        <select id="status">
+                            <option value="New">New Lead</option>
+                            <option value="Contacted">Contacted</option>
+                            <option value="Proposal Sent">Proposal Sent</option>
+                            <option value="Negotiation">Negotiation</option>
+                            <option value="Work Started">Work Started</option>
+                            <option value="Closed">Deal Closed (Won)</option>
+                            <option value="Lost">Deal Lost</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Original Proposal (₹)</label>
+                        <input type="text" id="proposal" placeholder="0" onfocus="handleAmountFocus(this)" onblur="handleAmountBlur(this)">
+                    </div>
+                    <div>
+                        <label>Final Agreed Amount (₹)</label>
+                        <input type="text" id="agreed" placeholder="0" onfocus="handleAmountFocus(this)" onblur="handleAmountBlur(this)">
+                    </div>
+                    <div>
+                        <label>Discount Given (₹)</label>
+                        <input type="text" id="discountAmt" placeholder="Auto-calculated" readonly style="background:#e2e8f0;">
+                    </div>
+
+                    <!-- Line 4: Discount % (Single Line Compact Option) -->
+                    <div>
+                        <label>Discount %</label>
+                        <input type="text" id="discountPer" placeholder="%" readonly style="background:#e2e8f0; text-align: center;">
+                    </div>
+                    
+                    <div class="half-width" style="grid-column: span 2;">
+                        <label>Reference</label>
+                        <textarea id="reference" rows="1" style="height: 40px; min-height: 40px;" placeholder="Enter reference origin, meeting context, or referrer name..."></textarea>
+                    </div>
+
+                    <div class="half-width" style="grid-column: span 2;">
+                        <label>Follow Up Notes</label>
+                        <textarea id="followUpNotes" rows="2" style="height: 50px; min-height: 50px;" placeholder="Recent interaction summary, calls made, or status comments..."></textarea>
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px;">
+                    <!-- Naya Save / Update Button (Compact) -->
+                    <button type="submit" id="submitBtn" class="btn-submit" style="width: max-content; padding: 10px 30px;">Save / Update</button>
+                    
+                    <!-- Naya Cancel Button (Compact) -->
+                    <button type="button" onclick="resetFormState()" style="width: max-content; background: #1e3a8a; color: white; border: none; padding: 10px 30px; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(30, 58, 138, 0.25);">Cancel</button>
+                    
+                    <!-- JS Errors se bachne ke liye chupa hua button -->
+                    <button type="button" id="cancelEditBtn" style="display:none;"></button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Table Section -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Saved Leads List</h2>
+                <div style="display: flex; gap: 8px;">
+                    <input type="file" id="csvFileInput" accept=".csv" style="display:none;" onchange="processImportCSV(event)">
+                    <button class="btn-import" id="btnImport" onclick="triggerImportCSV()">📤 Import CSV (Admin)</button>
+                    <button class="btn-excel" onclick="exportToCSV()">📥 Export to Excel</button>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Director</th>
+                            <th>Client / Company</th>
+                            <th>Person & Designation</th>
+                            <th>Source</th>
+                            <th>Status</th>
+                            <th>Agreed Amt</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leadTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Follow-up Modal -->
+<div id="followUpModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <button class="close-btn" onclick="closeFollowUpModal()">✕ Close</button>
+        <h2 style="color:#16a34a; margin-bottom: 15px;">💬 Add Follow-up Note</h2>
+        <form id="followUpForm" onsubmit="saveFollowUp(event)">
+            <input type="hidden" id="followUpLeadId">
+            
+            <div style="margin-bottom: 12px;">
+                <label>Updated Lead Status</label>
+                <select id="fuStatus" required>
+                    <option value="New">New Lead</option>
+                    <option value="Contacted">Contacted</option>
+                    <option value="Proposal Sent">Proposal Sent</option>
+                    <option value="Negotiation">Negotiation</option>
+                    <option value="Work Started">Work Started</option>
+                    <option value="Closed">Deal Closed (Won)</option>
+                    <option value="Lost">Deal Lost</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label>Team Member Name</label>
+                <input type="text" id="fuMember" placeholder="e.g. Amit Kumar" required>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label>Discussion Details</label>
+                <textarea id="fuNote" rows="3" placeholder="Discussion summary, client comments, or updates..." required></textarea>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label>Next Call / Meeting Date & Time</label>
+                <input type="text" id="fuNextDate" placeholder="e.g. 28th July, 3:00 PM">
+            </div>
+
+            <button type="submit" class="btn-submit" style="width:100%;">Save Follow-up</button>
+        </form>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div id="viewModal" class="modal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeModal()">✕ Close</button>
+        <h2 id="modalClientTitle" style="color:#0f172a; margin-bottom: 15px; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px;">Lead Details</h2>
+        <div class="modal-grid" id="modalDetails"></div>
+    </div>
+</div>
+
+<script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzmcI1nEs-LveAgV2aeqgbb0YGkxN8JmaHvMUsreu7tZBG5sz_hSxPRboPI-dpS7LRo/exec';
+
+    // 1234 ka Hash code default sabke liye
+    const DEFAULT_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"; 
+
+    // System Variables
+    let leads = JSON.parse(localStorage.getItem('crm_leads_v10')) || [];
+    let currentEditingLeadId = null;
+    let currentUser = null; 
+    let currentTab = 'All Leads';
+
+    // Load or set default passwords
+    let storedPasswords = JSON.parse(localStorage.getItem('crm_user_passwords'));
+    // NAYA CODE: Force Password Change yaad rakhne ke liye
+    let forcePassChange = JSON.parse(localStorage.getItem('crm_force_pass')) || {};
+    if (!storedPasswords) {
+        storedPasswords = {
+            "Admin": DEFAULT_HASH,
+            "Ajay Poddar": DEFAULT_HASH,
+            "Pranav Poddar": DEFAULT_HASH,
+            "Manisha Matanhelia": DEFAULT_HASH
+        };
+        localStorage.setItem('crm_user_passwords', JSON.stringify(storedPasswords));
+    }
+
+    const form = document.getElementById('crmForm');
+
+    // Secure Hashing 
+    async function hashPIN(pin) {
+        const msgBuffer = new TextEncoder().encode(pin);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // LOGIN LOGIC (English Alerts)
+    async function handleLogin(e) {
+        e.preventDefault();
+        const role = document.getElementById('loginRole').value;
+        const pin = document.getElementById('loginPin').value;
+        const inputHash = await hashPIN(pin);
+
+        if (storedPasswords[role] === inputHash) {
+            
+            // Agar Admin ne password reset kiya tha, toh prompt dikhayein
+            if (forcePassChange[role]) {
+                alert("⚠️ Your password has been reset by the Admin. Please set a new password.");
+                
+                let newPass = prompt("✨ Enter NEW Password:");
+                if (!newPass || newPass.trim() === "") {
+                    alert("❌ Password change cancelled. Login failed.");
+                    return; 
+                }
+                
+                let confirmPass = prompt("🔄 Confirm NEW Password:");
+                if (newPass !== confirmPass) {
+                    alert("❌ Passwords do not match! Please login again and retry.");
+                    return;
+                }
+                
+                // Naya password save karein
+                storedPasswords[role] = await hashPIN(newPass.trim());
+                localStorage.setItem('crm_user_passwords', JSON.stringify(storedPasswords));
+                
+                // Force change flag ko hata dein
+                forcePassChange[role] = false;
+                localStorage.setItem('crm_force_pass', JSON.stringify(forcePassChange));
+                
+                alert("✅ Password successfully updated! Logging in...");
+            }
+
+            currentUser = role;
+            sessionStorage.setItem('crm_active_user', role); // NAYA CODE: Session Save
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainCRM').style.display = 'block';
+            
+            // Setup Powers & UI based on Role
+            setupUserUI();
+        } else {
+            alert("❌ Incorrect PIN! Please try again.");
+            document.getElementById('loginPin').value = '';
+        }
+    }
+
+    // SETUP UI AFTER LOGIN (Showing Names dynamically to Admin)
+    function setupUserUI() {
+        document.getElementById('welcomeText').innerText = "👤 " + currentUser;
+
+        // Dropdown mein chhipe hue admin options ko dhundhna
+        const adminOpts = document.querySelectorAll('.admin-opt'); 
+
+        if (currentUser === "Admin") {
+            document.body.classList.add('admin-mode'); 
+            // Admin ke liye options dikhana (block)
+            adminOpts.forEach(opt => opt.style.display = 'block'); 
+            document.getElementById('btnImport').style.display = 'inline-block';
+            document.getElementById('opt-all-dir').style.display = 'block';
+        } else {
+            document.body.classList.remove('admin-mode');
+            // Normal user ke liye options chupana (none)
+            adminOpts.forEach(opt => opt.style.display = 'none'); 
+            document.getElementById('btnImport').style.display = 'none';
+            document.getElementById('opt-all-dir').style.display = 'none';
+        }
+
+        let defaultTab = (currentUser === 'Admin') ? 'All Leads' : currentUser;
+        normalizeFollowUpHistory();
+        
+        const dirSelect = document.getElementById('director');
+        dirSelect.value = defaultTab;
+        if (currentUser !== 'Admin') {
+            dirSelect.disabled = true;
+        } else {
+            dirSelect.disabled = false;
+        }
+        
+        filterTable(defaultTab);
+    }
+
+    // NAYA FUNCTION JO DROPDOWN SE FILTER KAREGA
+    function filterTable(tabName) {
+        currentTab = tabName;
+        clearSearch();
+        renderLeads();
+    }
+
+    // USER MENU (Top Right)
+    // UPDATED USER MENU ACTION (English Alerts)
+    async function handleUserMenuAction() {
+        const select = document.getElementById('userMenu');
+        const action = select.value;
+        select.value = ""; 
+
+        if (action === "ChangePIN") {
+            const oldPIN = prompt("🔑 Enter Current Password/PIN:");
+            if (oldPIN) {
+                const oldHash = await hashPIN(oldPIN.trim());
+                if (oldHash === storedPasswords[currentUser]) {
+                    const newPIN = prompt("✨ Enter NEW Password/PIN:");
+                    if (newPIN && newPIN.trim() !== "") {
+                        storedPasswords[currentUser] = await hashPIN(newPIN.trim());
+                        localStorage.setItem('crm_user_passwords', JSON.stringify(storedPasswords));
+                        alert("✅ Password changed successfully!");
+                    }
+                } else {
+                    alert("❌ Incorrect Current Password!");
+                }
+            }
+        } 
+        else if (action.startsWith("Reset_")) {
+            const userToReset = action.split("_")[1]; 
+            
+            if (confirm(`🛠️ Are you sure you want to reset the password for ${userToReset} to '1234'?`)) {
+                
+                storedPasswords[userToReset] = DEFAULT_HASH;
+                localStorage.setItem('crm_user_passwords', JSON.stringify(storedPasswords));
+                
+                forcePassChange[userToReset] = true;
+                localStorage.setItem('crm_force_pass', JSON.stringify(forcePassChange));
+                
+                alert(`✅ Password for ${userToReset} successfully reset to 1234.\n\nThey will be prompted to set a new password upon their next login.`);
+            }
+        }
+        else if (action === "Logout") {
+            currentUser = null;
+            sessionStorage.removeItem('crm_active_user'); // NAYA CODE: Session Clear
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('mainCRM').style.display = 'none';
+            document.getElementById('loginPin').value = '';
+        }
+    }
+
+    function escapeHTML(str) {
+        if (!str && str !== 0) return '';
+        return String(str).replace(/[&<>'"]/g, 
+            tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+        );
+    }
+
+    function checkCustomDesignation() {
+        const dropdown = document.getElementById('designation');
+        const customInput = document.getElementById('customDesignation');
+        if (dropdown.value === "Other") {
+            customInput.style.display = "block";
+            customInput.required = true;
+            customInput.focus();
+        } else {
+            customInput.style.display = "none";
+            customInput.required = false;
+            customInput.value = "";
+        }
+    }
+
+    const countryData = [
+        { name: "India", code: "+91" }, { name: "United States", code: "+1" }, { name: "United Arab Emirates", code: "+971" },
+        { name: "United Kingdom", code: "+44" }, { name: "Australia", code: "+61" }, { name: "Canada", code: "+1" },
+        { name: "Singapore", code: "+65" }, { name: "Germany", code: "+49" }, { name: "Saudi Arabia", code: "+966" },
+        { name: "Afghanistan", code: "+93" }, { name: "Bangladesh", code: "+880" }, { name: "Bhutan", code: "+975" },
+        { name: "China", code: "+86" }, { name: "France", code: "+33" }, { name: "Indonesia", code: "+62" },
+        { name: "Japan", code: "+81" }, { name: "Malaysia", code: "+60" }, { name: "Nepal", code: "+977" },
+        { name: "Oman", code: "+968" }, { name: "Qatar", code: "+974" }, { name: "South Africa", code: "+27" },
+        { name: "Sri Lanka", code: "+94" }, { name: "Thailand", code: "+66" }, { name: "Vietnam", code: "+84" }
+    ];
+
+    function populateCountries() {
+        const countrySelect = document.getElementById('country');
+        const codeSelect = document.getElementById('countryCode');
+        countrySelect.innerHTML = '';
+        codeSelect.innerHTML = '';
+
+        countryData.forEach(c => {
+            const optC = document.createElement('option');
+            optC.value = c.name;
+            optC.innerText = c.name;
+            countrySelect.appendChild(optC);
+
+            const optCode = document.createElement('option');
+            optCode.value = c.code;
+            optCode.innerText = c.code; 
+            codeSelect.appendChild(optCode);
+        });
+
+        countrySelect.value = "India";
+        codeSelect.value = "+91";
+    }
+
+    function autoPickCountryCode() {
+        const selectedCountry = document.getElementById('country').value;
+        const matched = countryData.find(c => c.name === selectedCountry);
+        if (matched) {
+            document.getElementById('countryCode').value = matched.code;
+        }
+    }
+
+    function parseNumber(val) {
+        if (!val) return 0;
+        return parseFloat(val.toString().replace(/,/g, '')) || 0;
+    }
+
+    function formatNumber(num) {
+        if (!num && num !== 0) return '0';
+        return new Intl.NumberFormat('en-IN').format(num);
+    }
+
+    function handleAmountFocus(input) {
+        const raw = parseNumber(input.value);
+        input.value = raw > 0 ? raw : '';
+    }
+
+    function handleAmountBlur(input) {
+        const raw = parseNumber(input.value);
+        input.value = raw > 0 ? formatNumber(raw) : '';
+        calculateDiscount();
+    }
+
+    function calculateDiscount() {
+        const propInput = document.getElementById('proposal');
+        const agreedInput = document.getElementById('agreed');
+        const discAmtInput = document.getElementById('discountAmt');
+        const discPerInput = document.getElementById('discountPer');
+
+        const prop = parseNumber(propInput.value);
+        const agreed = parseNumber(agreedInput.value);
+
+        if (prop > 0 && agreed >= 0) {
+            const discount = prop - agreed;
+            const percentage = (discount / prop) * 100;
+            discAmtInput.value = discount > 0 ? formatNumber(discount.toFixed(2)) : '0';
+            discPerInput.value = percentage > 0 ? percentage.toFixed(1) + '%' : '0%';
+        } else {
+            discAmtInput.value = '';
+            discPerInput.value = '';
+        }
+    }
+
+    function getLeadVal(lead, ...keys) {
+        if (!lead) return '';
+        for (let k of keys) {
+            if (lead[k] !== undefined && lead[k] !== null && String(lead[k]).trim() !== '' && String(lead[k]).trim() !== 'NaN') {
+                return lead[k];
+            }
+        }
+        return '';
+    }
+
+    // Current Tab ka data hi dikhayega search mein
+    function searchLead() {
+        const query = document.getElementById('searchInput').value.toLowerCase().trim();
+        const resultsDiv = document.getElementById('searchResults');
+        resultsDiv.innerHTML = '';
+        if (query === '') return;
+
+        const filtered = leads.filter(l => {
+            const tabMatch = (currentTab === 'All Leads') || (getLeadVal(l, 'director', 'Director') === currentTab);
+            if(!tabMatch) return false;
+
+            const cName = getLeadVal(l, 'clientName', 'Client Name').toString().toLowerCase();
+            const pName = getLeadVal(l, 'personName', 'Person Name').toString().toLowerCase();
+            const dName = getLeadVal(l, 'director', 'Director').toString().toLowerCase(); 
+            return cName.includes(query) || pName.includes(query) || dName.includes(query);
+        });
+
+        if (filtered.length === 0) {
+            resultsDiv.innerHTML = '<p style="color:#dc2626; font-size:12px; padding:4px;">No record found in this section.</p>';
+            return;
+        }
+
+        filtered.forEach(l => {
+            const cName = getLeadVal(l, 'clientName', 'Client Name') || 'N/A';
+            const pName = getLeadVal(l, 'personName', 'Person Name') || '-';
+            const status = getLeadVal(l, 'status', 'Status') || 'New';
+            const dir = getLeadVal(l, 'director', 'Director') || '';
+            const itemDiv = document.createElement('div');
+            itemDiv.style.cssText = "background:#cbd5e1; padding:8px 12px; margin-bottom:4px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:13px;";
+            
+            itemDiv.innerHTML = `
+                <span><strong>${escapeHTML(cName)}</strong> (${escapeHTML(pName)}) ${dir ? `<small style="color:#0369a1;">[${escapeHTML(dir)}]</small>` : ''} - <small style="color:#334155;">${escapeHTML(status)}</small></span>
+                <button type="button" onclick="loadLeadToForm(${l.id})" style="background:#d97706; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">Edit</button>
+            `;
+            resultsDiv.appendChild(itemDiv);
+        });
+    }
+
+    function loadLeadToForm(id) {
+        const l = leads.find(item => item.id === id);
+        if (!l) return;
+
+        currentEditingLeadId = id;
+        
+        document.getElementById('director').value = getLeadVal(l, 'director', 'Director') || '';
+        document.getElementById('clientName').value = getLeadVal(l, 'clientName', 'Client Name');
+        document.getElementById('personName').value = getLeadVal(l, 'personName', 'Person Name');
+        
+        const desigVal = getLeadVal(l, 'designation', 'Designation');
+        const desigSelect = document.getElementById('designation');
+        const customInput = document.getElementById('customDesignation');
+        let optionExists = Array.from(desigSelect.options).some(opt => opt.value === desigVal);
+
+        if (desigVal && !optionExists) {
+            desigSelect.value = "Other";
+            customInput.style.display = "block";
+            customInput.value = desigVal;
+            customInput.required = true;
+        } else {
+            desigSelect.value = desigVal;
+            customInput.style.display = "none";
+            customInput.value = "";
+            customInput.required = false;
+        }
+
+        document.getElementById('country').value = getLeadVal(l, 'country', 'Country') || 'India';
+        document.getElementById('countryCode').value = getLeadVal(l, 'countryCode') || '+91';
+        document.getElementById('mobile').value = getLeadVal(l, 'mobile', 'Mobile').toString().replace(/^'\+91\s*/, '');
+        document.getElementById('email').value = getLeadVal(l, 'email', 'Email');
+        document.getElementById('stdCode').value = getLeadVal(l, 'stdCode', 'STD Code');
+        document.getElementById('workTel').value = getLeadVal(l, 'workTel', 'Work Tel');
+        document.getElementById('address').value = getLeadVal(l, 'address', 'Address');
+        document.getElementById('city').value = getLeadVal(l, 'city', 'City');
+        document.getElementById('source').value = getLeadVal(l, 'source', 'Source');
+        document.getElementById('status').value = getLeadVal(l, 'status', 'Status') || 'New';
+        
+        const prop = parseNumber(getLeadVal(l, 'proposal', 'Original Proposal'));
+        const agreed = parseNumber(getLeadVal(l, 'agreed', 'Final Agreed'));
+        document.getElementById('proposal').value = prop ? formatNumber(prop) : '';
+        document.getElementById('agreed').value = agreed ? formatNumber(agreed) : '';
+        
+        calculateDiscount();
+
+        document.getElementById('reference').value = getLeadVal(l, 'reference', 'Reference', 'Summary', 'summary');
+        document.getElementById('followUpNotes').value = getLeadVal(l, 'followUpNotes', 'Follow Up Notes', 'Remarks', 'remarks');
+
+        document.getElementById('formHeader').innerText = "✏️ Edit Lead Details";
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerText = "Update Lead";
+        submitBtn.style.background = "#d97706";
+        document.getElementById('cancelEditBtn').style.display = "block";
+        document.getElementById('crmForm').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchResults').innerHTML = '';
+    }
+
+    function resetFormState() {
+        currentEditingLeadId = null;
+        form.reset();
+        
+        const customInput = document.getElementById('customDesignation');
+        customInput.style.display = "none";
+        customInput.value = "";
+        customInput.required = false;
+
+        document.getElementById('country').value = "India";
+        document.getElementById('countryCode').value = "+91";
+
+        // Reset director field back to filter's value
+        document.getElementById('director').value = currentTab;
+
+        document.getElementById('formHeader').innerText = "Add New Lead / Customer";
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerText = "Save / Update Lead";
+        submitBtn.style.background = "linear-gradient(135deg, #16a34a 0%, #15803d 100%)";
+        document.getElementById('cancelEditBtn').style.display = "none";
+        clearSearch();
+    }
+
+     form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Admin ke alawa baki directors ka select field disabled hai (to stop tampering)
+        let finalDirector = document.getElementById('director').value;
+        if(currentUser !== 'Admin') finalDirector = currentUser;
+
+        // Validation - Don't allow "All Leads" to be saved as a director name
+        if (finalDirector === 'All Leads' || finalDirector === '') {
+            alert("⚠️ Please select a specific Director (Ajay, Pranav, or Manisha) to save this lead.");
+            return; 
+        }
+
+        if (!currentEditingLeadId) { 
+            const cName = document.getElementById('clientName').value.trim().toLowerCase();
+            const pName = document.getElementById('personName').value.trim().toLowerCase();
+            
+            const isDuplicate = leads.find(lead => {
+                const existingClient = getLeadVal(lead, 'clientName', 'Client Name').toLowerCase();
+                const existingPerson = getLeadVal(lead, 'personName', 'Person Name').toLowerCase();
+                return (cName && existingClient === cName) || (pName && existingPerson === pName);
+            });
+
+            if (isDuplicate) {
+                const proceed = confirm(`⚠️ DHYAAN DEIN: Yeh Lead pehle se maujood hai:\nClient: ${getLeadVal(isDuplicate, 'clientName', 'Client Name')}\nPerson: ${getLeadVal(isDuplicate, 'personName', 'Person Name')}\n\nKya aap phir bhi iski Duplicate entry banana chahte hain?`);
+                if (!proceed) {
+                    return; 
+                }
+            }
+        }
+
+        const submitBtn = document.getElementById('submitBtn');
+        const originalText = submitBtn.innerText;
+        submitBtn.innerText = "Saving... ⏳";
+        submitBtn.disabled = true;
+
+        const selectedDesignation = document.getElementById('designation').value;
+        const customDesignationValue = document.getElementById('customDesignation').value.trim();
+        const existingLead = leads.find(item => item.id === currentEditingLeadId);
+
+        const leadData = {
+            id: currentEditingLeadId ? currentEditingLeadId : Date.now(),
+            director: finalDirector, // Save correct director
+            clientName: document.getElementById('clientName').value,
+            personName: document.getElementById('personName').value,
+            designation: selectedDesignation === "Other" ? customDesignationValue : selectedDesignation,
+            countryCode: document.getElementById('countryCode').value,
+            mobile: document.getElementById('mobile').value,
+            email: document.getElementById('email').value,
+            stdCode: document.getElementById('stdCode').value,
+            workTel: document.getElementById('workTel').value,
+            address: document.getElementById('address').value,
+            city: document.getElementById('city').value,
+            country: document.getElementById('country').value,
+            source: document.getElementById('source').value,
+            status: document.getElementById('status').value,
+            proposal: parseNumber(document.getElementById('proposal').value),
+            agreed: parseNumber(document.getElementById('agreed').value),
+            discountAmt: parseNumber(document.getElementById('discountAmt').value),
+            discountPer: document.getElementById('discountPer').value,
+            reference: document.getElementById('reference').value,
+            followUpNotes: document.getElementById('followUpNotes').value,
+            "Follow Up Notes": document.getElementById('followUpNotes').value,
+            followUps: existingLead ? (existingLead.followUps || []) : []
+        };
+
+        if (currentEditingLeadId) {
+            const index = leads.findIndex(item => item.id === currentEditingLeadId);
+            if (index !== -1) leads[index] = leadData;
+        } else { 
+            leads.push(leadData); 
+        }
+
+        saveAndRender();
+
+        try {
+            await fetch(scriptURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(leadData)
+            });
+            alert("✅ Lead saved & sent to Google Sheet!");
+        } catch (err) {
+            console.error("Google Sheet sync error:", err);
+            alert("⚠️ Lead saved locally. Google Sheet sync could not be confirmed.");
+        } finally {
+            submitBtn.innerText = originalText;
+            submitBtn.disabled = false;
+            resetFormState();
+        }
+    });
+
+    // Stats update for Current Tab only
+    function updateStats(filteredLeads) {
+        document.getElementById('statTotal').innerText = filteredLeads.length;
+        const activeCount = filteredLeads.filter(l => {
+            const st = getLeadVal(l, 'status', 'Status');
+            return st !== 'Closed' && st !== 'Lost';
+        }).length;
+        document.getElementById('statActive').innerText = activeCount;
+        
+        const closedCount = filteredLeads.filter(l => getLeadVal(l, 'status', 'Status') === 'Closed').length;
+        document.getElementById('statClosed').innerText = closedCount;
+        
+        const totalVal = filteredLeads.reduce((acc, curr) => {
+            const val = parseNumber(getLeadVal(curr, 'agreed', 'Final Agreed')) || parseNumber(getLeadVal(curr, 'proposal', 'Original Proposal'));
+            return acc + val;
+        }, 0);
+        document.getElementById('statValue').innerText = '₹' + formatNumber(totalVal);
+    }
+
+    // Render Table for Current Tab only
+    function renderLeads() {
+        const tbody = document.getElementById('leadTableBody');
+        tbody.innerHTML = '';
+
+        // Filter based on Tab
+        let tabLeads = leads;
+        if (currentTab !== 'All Leads') {
+            tabLeads = leads.filter(l => getLeadVal(l, 'director', 'Director') === currentTab);
+        }
+
+        if (!tabLeads || tabLeads.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#64748b; padding: 20px;">No leads recorded yet in this section.</td></tr>`;
+            updateStats(tabLeads);
+            return;
+        }
+
+        tabLeads.forEach((lead, index) => {
+            if (!lead.id) lead.id = Date.now() + index;
+
+            const director = getLeadVal(lead, 'director', 'Director'); 
+            const directorHTML = director 
+                ? `<small style="color:#0369a1; font-weight:700; background:#f1f5f9; padding:4px 8px; border-radius:4px; border:1px solid #cbd5e1;">${escapeHTML(director)}</small>` 
+                : `<span style="color:#94a3b8;">-</span>`;
+
+            const cName = getLeadVal(lead, 'clientName', 'Client Name') || 'N/A';
+            const pName = getLeadVal(lead, 'personName', 'Person Name') || '-';
+            const desig = getLeadVal(lead, 'designation', 'Designation') || '-';
+            const source = getLeadVal(lead, 'source', 'Source') || 'N/A';
+            const status = getLeadVal(lead, 'status', 'Status') || 'New';
+            const agreed = parseNumber(getLeadVal(lead, 'agreed', 'Final Agreed')) || parseNumber(getLeadVal(lead, 'proposal', 'Original Proposal'));
+
+            const badgeClass = status.replace(/\s+/g, '');
+            const adminDeleteHTML = (currentUser === "Admin") 
+                ? `<button class="btn-action btn-delete" onclick="deleteLead(${lead.id})">Delete</button>` 
+                : ``;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${directorHTML}</td>
+                <td><strong>${escapeHTML(cName)}</strong></td>
+                <td>${escapeHTML(pName)} <br><small style="color:#475569;">${escapeHTML(desig)}</small></td>
+                <td><small style="background:#bae6fd; color:#0369a1; padding:3px 8px; border-radius:4px; font-weight:600;">${escapeHTML(source)}</small></td>
+                <td><span class="badge badge-${badgeClass}">${escapeHTML(status)}</span></td>
+                <td>₹${formatNumber(agreed)}</td>
+                <td>
+                    <button class="btn-action btn-note" onclick="openFollowUpModal(${lead.id})">+ Note</button>
+                    <button class="btn-action btn-view" onclick="viewLeadDetails(${lead.id})">View</button>
+                    ${adminDeleteHTML}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        updateStats(tabLeads);
+    }
+
+    function openFollowUpModal(id) {
+        const lead = leads.find(l => l.id === id);
+        if (!lead) return;
+
+        document.getElementById('followUpLeadId').value = id;
+        document.getElementById('fuStatus').value = getLeadVal(lead, 'status', 'Status') || 'New';
+        document.getElementById('fuMember').value = '';
+        document.getElementById('fuNote').value = '';
+        document.getElementById('fuNextDate').value = '';
+        document.getElementById('followUpModal').style.display = 'block';
+    }
+
+    function closeFollowUpModal() {
+        document.getElementById('followUpModal').style.display = 'none';
+    }
+
+    async function saveFollowUp(e) {
+        e.preventDefault();
+        const id = parseNumber(document.getElementById('followUpLeadId').value);
+        const lead = leads.find(l => l.id === id);
+        if (!lead) {
+            alert("❌ Lead not found.");
+            return;
+        }
+
+        const newStatus = document.getElementById('fuStatus').value;
+        const member = document.getElementById('fuMember').value.trim();
+        const note = document.getElementById('fuNote').value.trim();
+        const nextDate = document.getElementById('fuNextDate').value.trim();
+
+        if (!lead.followUps) lead.followUps = [];
+
+        const today = new Date().toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+
+        lead.followUps.push({
+            date: today,
+            member: member || 'Team Member',
+            status: newStatus,
+            note: note,
+            nextDate: nextDate || 'Not Specified'
+        });
+
+        lead.followUpNotes = note;
+        lead['Follow Up Notes'] = note;
+        lead.status = newStatus;
+        lead['Status'] = newStatus;
+
+        saveAndRender();
+
+        try {
+            await fetch(scriptURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'saveLead', data: JSON.stringify(lead) })
+            });
+            closeFollowUpModal();
+            alert("✅ Follow-up saved & sent to Google Sheet!");
+        } catch (err) {
+            console.error("Follow-up sync error:", err);
+            closeFollowUpModal();
+            alert("⚠️ Follow-up saved locally, but Google Sheet sync failed: " + err.message);
+        }
+    }
+
+    function viewLeadDetails(id) {
+        const l = leads.find(item => item.id === id);
+        if (!l) return;
+        
+        const dir = getLeadVal(l, 'director', 'Director') || 'N/A'; 
+        const cName = getLeadVal(l, 'clientName', 'Client Name') || 'N/A';
+        const pName = getLeadVal(l, 'personName', 'Person Name') || 'N/A';
+        const desig = getLeadVal(l, 'designation', 'Designation') || 'N/A';
+        const mob = getLeadVal(l, 'mobile', 'Mobile') || 'N/A';
+        const email = getLeadVal(l, 'email', 'Email') || 'N/A';
+        const std = getLeadVal(l, 'stdCode', 'STD Code');
+        const workTel = getLeadVal(l, 'workTel', 'Work Tel');
+        const source = getLeadVal(l, 'source', 'Source') || 'N/A';
+        const city = getLeadVal(l, 'city', 'City');
+        const country = getLeadVal(l, 'country', 'Country') || 'India';
+        const status = getLeadVal(l, 'status', 'Status') || 'New';
+        const prop = parseNumber(getLeadVal(l, 'proposal', 'Original Proposal'));
+        const agreed = parseNumber(getLeadVal(l, 'agreed', 'Final Agreed'));
+        const discAmt = getLeadVal(l, 'discountAmt', 'Discount Amt');
+        const discPer = getLeadVal(l, 'discountPer', 'Discount %');
+        
+        const referenceText = getLeadVal(l, 'reference', 'Reference', 'Summary', 'summary');
+        const followUpNoteText = getLeadVal(l, 'followUpNotes', 'Follow Up Notes', 'Remarks', 'remarks');
+
+        let followUpHTML = `<h3 style="color:#0f172a; margin-bottom:12px; font-size:15px; border-bottom: 2px solid #cbd5e1; padding-bottom: 6px;">💬 Follow-up & Discussion Notes</h3>`;
+        let hasAnyNote = false;
+
+        if (followUpNoteText) {
+            hasAnyNote = true;
+            followUpHTML += `
+            <div style="background:#ffffff; padding:12px; margin-bottom:10px; border-left:5px solid #16a34a; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
+                <div style="display:flex; justify-content:space-between; font-size:12px; color:#475569; font-weight:bold; margin-bottom:4px;">
+                    <span>📄 Initial Sheet / Main Follow Up Note</span>
+                </div>
+                <span style="font-size:13px; color:#0f172a; display:block; line-height:1.5;">${escapeHTML(followUpNoteText)}</span>
+            </div>`;
+        }
+
+        const history = Array.isArray(l.followUps) ? l.followUps : [];
+        if (history.length > 0) {
+            hasAnyNote = true;
+            history.slice().reverse().forEach(f => {
+                followUpHTML += `
+                <div style="background:#ffffff; padding:12px; margin-bottom:10px; border-left:5px solid #2563eb; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
+                    <div style="display:flex; justify-content:space-between; font-size:12px; color:#475569; font-weight:bold; margin-bottom:6px;">
+                        <span>📅 ${escapeHTML(f.date)}</span>
+                        <span>👤 ${escapeHTML(f.member) || 'Team Member'}</span>
+                    </div>
+                    <div style="margin-bottom:6px;">
+                        <span class="badge badge-${escapeHTML((f.status || 'New').replace(/\s+/g, ''))}">Status: ${escapeHTML(f.status)}</span>
+                    </div>
+                    <span style="font-size:13px; color:#0f172a; display:block; line-height:1.4;">${escapeHTML(f.note)}</span>
+                    ${f.nextDate ? `<small style="color:#d97706; font-weight:bold; margin-top:6px; display:block;">⏰ Next Call / Meeting: ${escapeHTML(f.nextDate)}</small>` : ''}
+                </div>`;
+            });
+        }
+
+        if (!hasAnyNote) {
+            followUpHTML += `<div style="background:#ffffff; padding:12px; border-radius:8px; border:1px dashed #cbd5e1; color:#64748b; font-size:13px;">No follow-up notes recorded for this lead yet.</div>`;
+        }
+
+        document.getElementById('modalClientTitle').innerText = `${cName} - Full Profile`;
+        document.getElementById('modalDetails').innerHTML = `
+            <p><b>Card Belongs To:</b> <span style="color:#0369a1; font-weight:bold;">${escapeHTML(dir)}</span></p>
+            <p><b>Contact Person:</b> ${escapeHTML(pName)}</p>
+            <p><b>Designation:</b> ${escapeHTML(desig)}</p>
+            <p><b>Mobile:</b> ${escapeHTML(mob)}</p>
+            <p><b>Email:</b> ${escapeHTML(email)}</p>
+            <p><b>Work Tele No:</b> ${std ? '(' + escapeHTML(std) + ') ' : ''}${escapeHTML(workTel) || 'N/A'}</p>
+            <p><b>Source of Lead:</b> ${escapeHTML(source)}</p>
+            <p><b>Location:</b> ${city ? escapeHTML(city) + ', ' : ''}${escapeHTML(country)}</p>
+            <p><b>Current Stage:</b> <span class="badge badge-${escapeHTML(status.replace(/\s+/g, ''))}">${escapeHTML(status)}</span></p>
+            <p><b>Original Proposal:</b> ₹${formatNumber(prop)}</p>
+            <p><b>Final Agreed:</b> ₹${formatNumber(agreed)}</p>
+            <p><b>Discount Given:</b> ₹${formatNumber(discAmt)} (${escapeHTML(discPer) || '0%'})</p>
+            
+            <div style="grid-column: span 2; background:#ffffff; border:1px solid #cbd5e1; padding:12px; border-radius:8px;">
+                <b style="color:#334155; font-size:12px;">Reference:</b>
+                <span style="display:block; font-size:13px; color:#0f172a; margin-top:2px;">${escapeHTML(referenceText) || 'No reference details.'}</span>
+            </div>
+
+            <div style="grid-column: span 2; background:#e2e8f0; border:1px solid #cbd5e1; padding:16px; border-radius:10px; margin-top:10px;">
+                ${followUpHTML}
+            </div>
+        `;
+        document.getElementById('viewModal').style.display = 'block';
+    }
+
+    function closeModal() { document.getElementById('viewModal').style.display = 'none'; }
+
+     async function deleteLead(id) {
+        if (currentUser !== "Admin") {
+            alert("🛑 Access Denied! Deletion is restricted to Admin Mode only.");
+            return; 
+        }
+        if (confirm('Are you sure you want to permanently delete this lead record?')) {
+            // 1. Pehle system (screen) se delete karega
+            leads = leads.filter(l => l.id !== id);
+            saveAndRender();
+            
+            // 2. Ab turant Google Sheet ko nayi (updated) list bhej dega jisme wo lead nahi hogi
+            try {
+                await fetch(scriptURL, {
+                    method: 'POST', 
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'bulkSync', leads: leads }) 
+                });
+                alert('✅ Lead deleted successfully from System AND Google Sheet.');
+            } catch (err) {
+                console.error('Delete sync error:', err);
+                alert('⚠️ Lead deleted locally, but Google Sheet sync failed.');
+            }
+        }
+    }
+
+    // EXPORT TO EXCEL: Sirf Current Tab ka data export hoga
+    function exportToCSV() {
+        let exportLeads = leads;
+        if(currentTab !== 'All Leads') {
+            exportLeads = leads.filter(l => getLeadVal(l, 'director', 'Director') === currentTab);
+        }
+
+        if (exportLeads.length === 0) {
+            alert('No lead records available to export in this tab!');
+            return;
+        }
+
+        let csv = 'Client Name,Person Name,Designation,Mobile,Email,STD Code,Work Tel,Address,City,Country,Source,Status,Original Proposal,Final Agreed,Discount Amt,Discount %,Reference,Follow Up Notes,Remarks,Director\n';
+        const cleanCSVField = (str) => `"${(str || '').toString().replace(/"/g, '""').replace(/\n/g, ' ')}"`;
+
+        exportLeads.forEach(l => {
+            csv += `${cleanCSVField(getLeadVal(l, 'clientName', 'Client Name'))},${cleanCSVField(getLeadVal(l, 'personName', 'Person Name'))},${cleanCSVField(getLeadVal(l, 'designation', 'Designation'))},"${'\'' + getLeadVal(l, 'mobile', 'Mobile')}",${cleanCSVField(getLeadVal(l, 'email', 'Email'))},${cleanCSVField(getLeadVal(l, 'stdCode', 'STD Code'))},${cleanCSVField(getLeadVal(l, 'workTel', 'Work Tel'))},${cleanCSVField(getLeadVal(l, 'address', 'Address'))},${cleanCSVField(getLeadVal(l, 'city', 'City'))},${cleanCSVField(getLeadVal(l, 'country', 'Country'))},${cleanCSVField(getLeadVal(l, 'source', 'Source'))},${cleanCSVField(getLeadVal(l, 'status', 'Status'))},"${getLeadVal(l, 'proposal', 'Original Proposal') || 0}","${getLeadVal(l, 'agreed', 'Final Agreed') || 0}","${getLeadVal(l, 'discountAmt', 'Discount Amt') || 0}",${cleanCSVField(getLeadVal(l, 'discountPer', 'Discount %'))},${cleanCSVField(getLeadVal(l, 'reference', 'Reference', 'Summary', 'summary'))},${cleanCSVField(getLeadVal(l, 'followUpNotes', 'Follow Up Notes', 'Remarks', 'remarks'))},"",${cleanCSVField(getLeadVal(l, 'director', 'Director'))}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        let filename = currentTab === 'All Leads' ? 'All_Leads' : currentTab.replace(/ /g, '_');
+        link.setAttribute('download', `CRM_Export_${filename}_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function triggerImportCSV() {
+        if (currentUser !== "Admin") return;
+        document.getElementById('csvFileInput').click();
+    }
+
+    function processImportCSV(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+            const content = event.target.result;
+            let rows = []; let curRow = []; let curVal = ''; let inQuotes = false;
+
+            for (let i = 0; i < content.length; i++) {
+                let c = content[i]; let nextC = content[i+1];
+                if (c === '"') {
+                    if (inQuotes && nextC === '"') { curVal += '"'; i++; } else { inQuotes = !inQuotes; }
+                } else if (c === ',' && !inQuotes) {
+                    curRow.push(curVal.trim()); curVal = '';
+                } else if ((c === '\r' || c === '\n') && !inQuotes) {
+                    if (c === '\r' && nextC === '\n') { i++; }
+                    curRow.push(curVal.trim());
+                    if (curRow.some(cell => cell !== '')) { rows.push(curRow); }
+                    curRow = []; curVal = '';
+                } else { curVal += c; }
+            }
+            if (curVal || curRow.length > 0) { curRow.push(curVal.trim()); rows.push(curRow); }
+
+            if (rows.length <= 1) { alert("❌ CSV file is empty."); return; }
+
+            const headers = rows[0].map(h => String(h || '').replace(/^\\uFEFF/, '').trim().toLowerCase());
+            const colIndex = (names, fallback) => {
+                for (const name of names) {
+                    const idx = headers.indexOf(name.toLowerCase());
+                    if (idx >= 0) return idx;
+                }
+                return fallback;
+            };
+
+            const IDX = {
+                clientName: colIndex(['client name', 'client/company', 'client', 'company'], 0),
+                personName: colIndex(['person name', 'contact person', 'person'], 1),
+                designation: colIndex(['designation', 'job title'], 2),
+                mobile: colIndex(['mobile', 'mobile no', 'mobile number', 'phone'], 3),
+                email: colIndex(['email', 'email id'], 4),
+                stdCode: colIndex(['std code', 'std'], 5),
+                workTel: colIndex(['work tel', 'work telephone', 'telephone'], 6),
+                address: colIndex(['address'], 7),
+                city: colIndex(['city'], 8),
+                country: colIndex(['country'], 9),
+                source: colIndex(['source', 'lead source'], 10),
+                status: colIndex(['status', 'lead status'], 11),
+                proposal: colIndex(['original proposal', 'proposal'], 12),
+                agreed: colIndex(['final agreed', 'agreed'], 13),
+                discountAmt: colIndex(['discount amt', 'discount amount'], 14),
+                discountPer: colIndex(['discount %', 'discount percent'], 15),
+                reference: colIndex(['reference', 'summary'], 16),
+                followUpNotes: colIndex(['follow up notes', 'follow-up notes', 'followup notes', 'follow up note'], 17),
+                remarks: colIndex(['remarks', 'remark'], 18),
+                director: colIndex(['director', 'card belongs to'], 19)
+            };
+
+            leads = [];
+            let importedCount = 0;
+
+            for (let i = 1; i < rows.length; i++) {
+                const cols = rows[i];
+                if (cols.length >= 2 && cols[IDX.clientName]) {
+                    const mobileRaw = (cols[IDX.mobile] || '').replace(/'/g, '');
+                    const noteVal = (cols[IDX.followUpNotes] || cols[IDX.remarks] || '').trim();
+
+                    const newLead = {
+                        id: Date.now() + i,
+                        director: IDX.director !== -1 ? (cols[IDX.director] || 'Ajay Poddar') : 'Ajay Poddar',
+                        clientName: cols[IDX.clientName] || '',
+                        personName: cols[IDX.personName] || 'N/A',
+                        designation: cols[IDX.designation] || '',
+                        countryCode: '+91',
+                        mobile: mobileRaw,
+                        email: cols[IDX.email] || '',
+                        stdCode: cols[IDX.stdCode] || '',
+                        workTel: cols[IDX.workTel] || '',
+                        address: cols[IDX.address] || '',
+                        city: cols[IDX.city] || '',
+                        country: cols[IDX.country] || 'India',
+                        source: cols[IDX.source] || 'Referral',
+                        status: cols[IDX.status] || 'New',
+                        proposal: parseNumber(cols[IDX.proposal]),
+                        agreed: parseNumber(cols[IDX.agreed]),
+                        discountAmt: parseNumber(cols[IDX.discountAmt]),
+                        discountPer: cols[IDX.discountPer] || '',
+                        reference: cols[IDX.reference] || '',
+                        followUpNotes: noteVal,
+                        "Follow Up Notes": noteVal,
+                        followUps: noteVal ? [{ date: 'Imported from CSV', member: 'Existing Record', status: (cols[IDX.status] || 'New'), note: noteVal, nextDate: '' }] : []
+                    };
+                    leads.push(newLead);
+                    importedCount++;
+                }
+            }
+
+            saveAndRender();
+            alert(`✅ Successfully imported ${importedCount} leads into CRM. Now syncing to Google Sheet...`);
+            document.getElementById('csvFileInput').value = '';
+            await syncAllLeadsToGoogleSheet();
+        };
+        reader.readAsText(file);
+    }
+
+    function normalizeFollowUpHistory() {
+        leads = (Array.isArray(leads) ? leads : []).map((lead, index) => {
+            if (!lead.id) lead.id = Date.now() + index;
+
+            // Purani khali leads ko MD sir k naam par assign karo
+            if (!lead.director || lead.director.trim() === '') {
+                lead.director = 'Ajay Poddar';
+            }
+
+            const note = getLeadVal(lead, 'followUpNotes', 'Follow Up Notes', 'Remarks', 'remarks');
+            if (!Array.isArray(lead.followUps)) lead.followUps = [];
+
+            if (note && lead.followUps.length === 0) {
+                lead.followUps.push({ date: 'Existing Record', member: 'Existing Record', status: getLeadVal(lead, 'status', 'Status') || 'New', note: String(note), nextDate: '' });
+            }
+            return lead;
+        });
+    }
+
+    function saveAndRender() {
+        normalizeFollowUpHistory();
+        localStorage.setItem('crm_leads_v10', JSON.stringify(leads));
+        renderLeads();
+    }
+
+    async function syncAllLeadsToGoogleSheet() {
+        if (!scriptURL) return false;
+        if (!Array.isArray(leads) || leads.length === 0) return false;
+
+        try {
+            await fetch(scriptURL, {
+                method: 'POST', mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'bulkSync', leads: leads })
+            });
+            alert('✅ All leads sent to Google Sheet.');
+            return true;
+        } catch (err) {
+            console.error('Bulk sync error:', err);
+            return false;
+        } 
+    }
+
+    async function fetchLeadsFromCloud() {
+        if(!scriptURL) return;
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            const response = await fetch(scriptURL, { signal: controller.signal, cache: 'no-store' });
+            clearTimeout(timeoutId);
+
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    leads = data;
+                    localStorage.setItem('crm_leads_v10', JSON.stringify(leads));
+                    if(currentUser) { normalizeFollowUpHistory(); renderLeads(); }
+                }
+            }
+        } catch (err) {
+            console.log("Cloud sync unavailable.");
+        }
+    }
+
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) { event.target.style.display = "none"; }
+    };
+
+    window.onkeydown = function(event) {
+        if (event.key === 'Escape') { closeModal(); closeFollowUpModal(); }
+    };
+
+    populateCountries();
+    try { leads = JSON.parse(localStorage.getItem('crm_leads_v10')) || []; } catch (e) { leads = []; }
+    fetchLeadsFromCloud(); // Background me load hoga
+
+    document.addEventListener('contextmenu', event => { if (currentUser !== "Admin") event.preventDefault(); });
+
+    document.addEventListener('keydown', function(e) {
+        if (currentUser !== "Admin") {
+            if (e.key === 'F12') { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && (e.key === 'U' || e.key === 'u')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && (e.key === 'S' || e.key === 's')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && (e.key === 'P' || e.key === 'p')) { e.preventDefault(); return false; }
+        }
+    });
+
+    function checkDuplicate() {
+        if (currentEditingLeadId) return; 
+        const cName = document.getElementById('clientName').value.trim().toLowerCase();
+        const pName = document.getElementById('personName').value.trim().toLowerCase();
+        if (!cName && !pName) return;
+
+        const duplicate = leads.find(lead => {
+            const existingClient = getLeadVal(lead, 'clientName', 'Client Name').toLowerCase();
+            const existingPerson = getLeadVal(lead, 'personName', 'Person Name').toLowerCase();
+            return (cName && existingClient === cName) || (pName && existingPerson === pName);
+        });
+
+        if (duplicate) {
+            alert(`⚠️ Alert: Yeh naam pehle se database mein hai!\nClient: ${getLeadVal(duplicate, 'clientName', 'Client Name')}\nPerson: ${getLeadVal(duplicate, 'personName', 'Person Name')}`);
+        }
+    }
+
+    // --- NAYA CODE: Auto-login check jab page load (refresh) hota hai ---
+    window.addEventListener('DOMContentLoaded', () => {
+        const savedUser = sessionStorage.getItem('crm_active_user');
+        if (savedUser) {
+            currentUser = savedUser;
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainCRM').style.display = 'block';
+            setupUserUI();
+        }
+    });
+    // --------------------------------------------------------------------
+
+</script>
+</body>
+</html>

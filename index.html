@@ -483,7 +483,8 @@
 
             <div style="margin-bottom: 18px;">
                 <label>Next Call / Meeting Date & Time</label>
-                <input type="text" id="fuNextDate" placeholder="e.g. 28th July, 3:00 PM">
+                <!-- YAHAN CHANGE KIYA GAYA HAI: Text se datetime-local kiya gaya hai -->
+                <input type="datetime-local" id="fuNextDate">
             </div>
 
             <button type="submit" class="btn-submit" style="width:100%;">Save Follow-up</button>
@@ -545,7 +546,7 @@
 
         if (storedPasswords[role] === inputHash) {
             
-            // Agar Admin ne password reset kiya tha, toh prompt dikhayein
+            // Agar Admin ne password reset kiya था, toh prompt dikhayein
             if (forcePassChange[role]) {
                 alert("⚠️ Your password has been reset by the Admin. Please set a new password.");
                 
@@ -1502,7 +1503,7 @@
         });
 
         if (duplicate) {
-            alert(`⚠️ Alert: Yeh naam pehle se database mein hai!\nClient: ${getLeadVal(duplicate, 'clientName', 'Client Name')}\nPerson: ${getLeadVal(duplicate, 'personName', 'Person Name')}`);
+            alert(`⚠️ Alert:  This name already exists in the database!\nClient: ${getLeadVal(duplicate, 'clientName', 'Client Name')}\nPerson: ${getLeadVal(duplicate, 'personName', 'Person Name')}`);
         }
     }
 
@@ -1516,7 +1517,55 @@
             setupUserUI();
         }
     });
-    // --------------------------------------------------------------------
+
+    // --- NAYA CODE: AUTOMATED FOLLOW-UP REMINDER SYSTEM (3 TIMES ALERT) ---
+    function checkFollowUpReminders() {
+        // Agar user logged in nahi hai, toh check mat karo
+        if (!currentUser) return; 
+        
+        const now = new Date();
+        // Database se check karein ki kisko kitni baar remind kiya ja chuka hai
+        let remindedLeads = JSON.parse(localStorage.getItem('crm_reminded_leads_v2')) || {};
+
+        leads.forEach(lead => {
+            // Sirf current user (ya Admin) ki leads ka reminder dikhaye
+            const leadDirector = getLeadVal(lead, 'director', 'Director');
+            if (currentUser !== 'Admin' && leadDirector !== currentUser) return;
+
+            if (lead.followUps && lead.followUps.length > 0) {
+                // Hamesha sirf sabse LATEST follow-up ko hi check karega
+                const latestFollowUp = lead.followUps[lead.followUps.length - 1]; 
+                
+                if (latestFollowUp.nextDate) {
+                    const nextDateObj = new Date(latestFollowUp.nextDate);
+                    
+                    // Check karein ki time ho gaya hai ya nahi
+                    if (!isNaN(nextDateObj) && nextDateObj <= now) {
+                        // Unique Key: Lead ID + Uska specific time
+                        const reminderKey = lead.id + "_" + latestFollowUp.nextDate; 
+                        
+                        // Pata lagayein ki is time ke liye kitni baar alert aa chuka hai (Default 0)
+                        let remindCount = remindedLeads[reminderKey] || 0;
+                        
+                        // Agar 3 baar se kam alert aaya hai, tabhi popup dikhayein
+                        if (remindCount < 3) {
+                            alert(`⏰ REMINDER (${remindCount + 1}/3): Follow-up Due!\n\nClient: ${lead.clientName}\nPerson: ${lead.personName}\nMobile: ${lead.mobile}\n\nLast Note: ${latestFollowUp.note}`);
+                            
+                            // Count badhakar database mein save kar lein
+                            remindedLeads[reminderKey] = remindCount + 1;
+                            localStorage.setItem('crm_reminded_leads_v2', JSON.stringify(remindedLeads));
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Har 1 minute (60,000 milliseconds) mein background mein reminder check karega
+    setInterval(checkFollowUpReminders, 60000);
+    
+    // Login karne ke thik 5 second baad pehli baar check karega
+    setTimeout(checkFollowUpReminders, 5000); 
 
 </script>
 </body>

@@ -1419,11 +1419,12 @@
         } 
     }
 
-    async function fetchLeadsFromCloud() {
+     async function fetchLeadsFromCloud() {
         if(!scriptURL) return;
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            // 🚨 Yahan 8000 ki jagah 30000 kar diya gaya hai
+            const timeoutId = setTimeout(() => controller.abort(), 30000); 
             
             const fetchURL = `${scriptURL}?apiKey=${API_KEY}&action=getLeads`;
             
@@ -1439,10 +1440,9 @@
                 }
             }
         } catch (err) {
-            console.log("Cloud sync unavailable.");
+            console.log("Cloud sync unavailable or took too long.");
         }
     }
-
     window.onclick = function(event) {
         if (event.target.classList.contains('modal')) { event.target.style.display = "none"; }
     };

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1010,8 +1010,8 @@
             if (!lead.id) lead.id = Date.now() + index;
 
             const director = getLeadVal(lead, 'director', 'Director'); 
-            const directorHTML = director 
-                ? `<small style="color:#0369a1; font-weight:700; background:#f1f5f9; padding:4px 8px; border-radius:4px; border:1px solid #cbd5e1;">${escapeHTML(director)}</small>` 
+             const directorHTML = director 
+                ? `<span>${escapeHTML(director)}</span>` 
                 : `<span style="color:#94a3b8;">-</span>`;
 
             const cName = getLeadVal(lead, 'clientName', 'Client Name') || 'N/A';
@@ -1031,8 +1031,8 @@
                 <td>${directorHTML}</td>
                 <td><strong>${escapeHTML(cName)}</strong></td>
                 <td>${escapeHTML(pName)} <br><small style="color:#475569;">${escapeHTML(desig)}</small></td>
-                <td><small style="background:#bae6fd; color:#0369a1; padding:3px 8px; border-radius:4px; font-weight:600;">${escapeHTML(source)}</small></td>
-                <td><span class="badge badge-${badgeClass}">${escapeHTML(status)}</span></td>
+                 <td><span>${escapeHTML(source)}</span></td>
+<td><span>${escapeHTML(status)}</span></td>
                 <td>₹${formatNumber(agreed)}</td>
                 <td>
                     <button class="btn-action btn-note" onclick="openFollowUpModal(${lead.id})">+ Note</button>

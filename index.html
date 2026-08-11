@@ -490,7 +490,7 @@
 
 <script>
     const scriptURL = "https://script.google.com/macros/s/AKfycbw86gfGOsXEDu2nAhxRJpKe7jyDmWKfyqN0klPkFFHwcY3Qui8QoqmY8WrujhruGSUD/exec";
-    const API_KEY = "VY2&S86T%9yr2nN>";
+    const API_KEY = "VY2S86T9yr2nN123"; 
 
     const DEFAULT_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"; 
 
@@ -1419,12 +1419,11 @@
         } 
     }
 
-     async function fetchLeadsFromCloud() {
+    async function fetchLeadsFromCloud() {
         if(!scriptURL) return;
         try {
             const controller = new AbortController();
-            // 🚨 Yahan 8000 ki jagah 30000 kar diya gaya hai
-            const timeoutId = setTimeout(() => controller.abort(), 30000); 
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
             
             const fetchURL = `${scriptURL}?apiKey=${API_KEY}&action=getLeads`;
             
@@ -1440,9 +1439,10 @@
                 }
             }
         } catch (err) {
-            console.log("Cloud sync unavailable or took too long.");
+            console.log("Cloud sync unavailable.");
         }
     }
+
     window.onclick = function(event) {
         if (event.target.classList.contains('modal')) { event.target.style.display = "none"; }
     };

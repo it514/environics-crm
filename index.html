@@ -6,6 +6,10 @@
     <title>CRM Login</title>
     <!-- Font Awesome Link for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 🔥 ADDED PAPAPARSE LIBRARY FOR PERFECT CSV UPLOADING -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; margin: 0; padding: 0; }
         
@@ -257,7 +261,7 @@
         <div class="card search-card">
             <h2>🔍 Quick Search & Edit Lead</h2>
             <div style="display: flex; gap: 8px; align-items: center;">
-                <input type="text" id="searchInput" placeholder="Search by Client Name or Contact Person..." oninput="searchLead()" style="flex: 1;">
+                <input type="text" id="searchInput" placeholder="Search by Company Name or Contact Person..." oninput="searchLead()" style="flex: 1;">
                 <button type="button" onclick="clearSearch()" style="width: max-content; white-space: nowrap; background: #475569; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;">Clear Search</button>
             </div>
             <div id="searchResults" style="margin-top: 10px; max-height: 200px; overflow-y: auto;"></div>
@@ -421,7 +425,7 @@
                     <thead>
                         <tr>
                             <th>Director</th>
-                            <th>Client / Company</th>
+                            <th>Company</th>
                             <th>Person & Designation</th>
                             <th>Source</th>
                             <th>Status</th>
@@ -464,7 +468,7 @@
 
             <div style="margin-bottom: 12px;">
                 <label>Discussion Details</label>
-                <textarea id="fuNote" rows="3" placeholder="Discussion summary, client comments, or updates..." required></textarea>
+                <textarea id="fuNote" rows="3" placeholder="Discussion summary, comments, or updates..." required></textarea>
             </div>
 
             <div style="margin-bottom: 18px;">
@@ -526,7 +530,7 @@
 
     const form = document.getElementById('crmForm');
 
-    // 🔥 Realtime Listener: Cloud Database Data Sync
+    // 🔥 Realtime Listener
     db.ref("leads").on("value", (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -736,7 +740,7 @@
         const filtered = leads.filter(l => {
             const tabMatch = (currentTab === 'All Leads') || (getLeadVal(l, 'director', 'Director') === currentTab);
             if(!tabMatch) return false;
-            const cName = getLeadVal(l, 'clientName', 'Client Name').toString().toLowerCase();
+            const cName = getLeadVal(l, 'clientName', 'Client Name', 'Company Name').toString().toLowerCase();
             const pName = getLeadVal(l, 'personName', 'Person Name').toString().toLowerCase();
             return cName.includes(query) || pName.includes(query);
         });
@@ -750,7 +754,7 @@
             const itemDiv = document.createElement('div');
             itemDiv.style.cssText = "background:#cbd5e1; padding:8px 12px; margin-bottom:4px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:13px;";
             itemDiv.innerHTML = `
-                <span><strong>${escapeHTML(getLeadVal(l, 'clientName', 'Client Name'))}</strong> (${escapeHTML(getLeadVal(l, 'personName', 'Person Name'))})</span>
+                <span><strong>${escapeHTML(getLeadVal(l, 'clientName', 'Client Name', 'Company Name'))}</strong> (${escapeHTML(getLeadVal(l, 'personName', 'Person Name'))})</span>
                 <button type="button" onclick="loadLeadToForm('${l.id}')" style="background:#d97706; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">Edit</button>
             `;
             resultsDiv.appendChild(itemDiv);
@@ -763,7 +767,7 @@
         currentEditingLeadId = l.id;
         
         document.getElementById('director').value = getLeadVal(l, 'director', 'Director') || '';
-        document.getElementById('clientName').value = getLeadVal(l, 'clientName', 'Client Name');
+        document.getElementById('clientName').value = getLeadVal(l, 'clientName', 'Client Name', 'Company Name');
         document.getElementById('personName').value = getLeadVal(l, 'personName', 'Person Name');
         document.getElementById('mobile').value = getLeadVal(l, 'mobile', 'Mobile').toString().replace(/^'\+91\s*/, '');
         document.getElementById('email').value = getLeadVal(l, 'email', 'Email');
@@ -800,7 +804,6 @@
         clearSearch();
     }
 
-    // 🔥 SAVE/UPDATE LEAD TO FIREBASE
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -890,8 +893,9 @@
 
         tabLeads.forEach((lead) => {
             const director = getLeadVal(lead, 'director', 'Director'); 
-            const cName = getLeadVal(lead, 'clientName', 'Client Name') || 'N/A';
+            const cName = getLeadVal(lead, 'clientName', 'Client Name', 'Company Name') || 'N/A';
             const pName = getLeadVal(lead, 'personName', 'Person Name') || '-';
+            const desig = getLeadVal(lead, 'designation', 'Designation');
             const source = getLeadVal(lead, 'source', 'Source') || 'N/A';
             const status = getLeadVal(lead, 'status', 'Status') || 'New';
             const agreed = parseNumber(getLeadVal(lead, 'agreed', 'proposal'));
@@ -899,11 +903,15 @@
             const badgeClass = status.replace(/\s+/g, '');
             const adminDeleteHTML = (currentUser === "Admin") ? `<button class="btn-action btn-delete" onclick="deleteLead('${lead.firebaseKey}')">Delete</button>` : ``;
 
+            const personAndDesigHTML = desig 
+                ? `<strong>${escapeHTML(pName)}</strong><br><small style="color:#64748b; font-size:11px;">${escapeHTML(desig)}</small>`
+                : `<strong>${escapeHTML(pName)}</strong>`;
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><small style="color:#0369a1; font-weight:700;">${escapeHTML(director)}</small></td>
                 <td><strong>${escapeHTML(cName)}</strong></td>
-                <td>${escapeHTML(pName)}</td>
+                <td>${personAndDesigHTML}</td>
                 <td><small style="background:#bae6fd; color:#0369a1; padding:3px 8px; border-radius:4px;">${escapeHTML(source)}</small></td>
                 <td><span class="badge badge-${badgeClass}">${escapeHTML(status)}</span></td>
                 <td>₹${formatNumber(agreed)}</td>
@@ -918,7 +926,6 @@
         updateStats(tabLeads);
     }
 
-    // 🔥 DELETE LEAD FROM FIREBASE
     async function deleteLead(firebaseKey) {
         if (currentUser !== "Admin") { alert("🛑 Access Denied!"); return; }
         if (confirm('Are you sure you want to permanently delete this lead?')) {
@@ -967,16 +974,11 @@
         alert("✅ Follow-up saved in Firebase!");
     }
 
-    // 🔍 VIEW LEAD DETAILS FUNCTION (FIXED & FULLY IMPLEMENTED)
     function viewLeadDetails(id) {
         const lead = leads.find(l => String(l.id) === String(id));
-        if (!lead) {
-            console.error("Lead not found for ID:", id);
-            return;
-        }
+        if (!lead) return;
 
-        document.getElementById('modalClientTitle').innerText = `📋 Lead Details: ${getLeadVal(lead, 'clientName', 'Client Name')}`;
-
+        document.getElementById('modalClientTitle').innerText = `📋 Lead Details: ${getLeadVal(lead, 'clientName', 'Client Name', 'Company Name')}`;
         const container = document.getElementById('modalDetails');
         
         let followUpHTML = '';
@@ -992,13 +994,16 @@
             followUpHTML = '<p style="font-size:12px; color:#64748b; margin-top:4px;">No follow-up history logged yet.</p>';
         }
 
+        // ✅ ADDED Address Field Box
         container.innerHTML = `
             <p><strong>Director / Card:</strong> ${escapeHTML(getLeadVal(lead, 'director', 'Director'))}</p>
-            <p><strong>Company Name:</strong> ${escapeHTML(getLeadVal(lead, 'clientName', 'Client Name'))}</p>
-            <p><strong>Contact Person:</strong> ${escapeHTML(getLeadVal(lead, 'personName', 'Person Name'))} (${escapeHTML(getLeadVal(lead, 'designation', 'Designation') || '-')})</p>
+            <p><strong>Company Name:</strong> ${escapeHTML(getLeadVal(lead, 'clientName', 'Client Name', 'Company Name'))}</p>
+            <p><strong>Contact Person:</strong> ${escapeHTML(getLeadVal(lead, 'personName', 'Person Name'))}</p>
+            <p><strong>Designation:</strong> ${escapeHTML(getLeadVal(lead, 'designation', 'Designation') || '-')}</p>
             <p><strong>Mobile Number:</strong> ${escapeHTML(getLeadVal(lead, 'countryCode', 'Country Code'))} ${escapeHTML(getLeadVal(lead, 'mobile', 'Mobile'))}</p>
             <p><strong>Email:</strong> ${escapeHTML(getLeadVal(lead, 'email', 'Email') || '-')}</p>
             <p><strong>Work Telephone:</strong> ${escapeHTML(getLeadVal(lead, 'stdCode', 'STD'))} ${escapeHTML(getLeadVal(lead, 'workTel', 'Work Tel') || '-')}</p>
+            <p><strong>Office Address:</strong> ${escapeHTML(getLeadVal(lead, 'address', 'Address') || '-')}</p>
             <p><strong>City & Country:</strong> ${escapeHTML(getLeadVal(lead, 'city', 'City') || '-')}, ${escapeHTML(getLeadVal(lead, 'country', 'Country') || '-')}</p>
             <p><strong>Lead Source:</strong> ${escapeHTML(getLeadVal(lead, 'source', 'Source') || '-')}</p>
             <p><strong>Current Status:</strong> <span class="badge badge-${(getLeadVal(lead, 'status', 'Status') || 'New').replace(/\s+/g, '')}">${escapeHTML(getLeadVal(lead, 'status', 'Status'))}</span></p>
@@ -1014,117 +1019,132 @@
                 ${followUpHTML}
             </div>
         `;
-
         document.getElementById('viewModal').style.display = 'block';
     }
 
-    // ❌ CLOSE VIEW MODAL
-    function closeModal() {
-        document.getElementById('viewModal').style.display = 'none';
-    }
+    function closeModal() { document.getElementById('viewModal').style.display = 'none'; }
 
     function triggerImportCSV() { if (currentUser === "Admin") document.getElementById('csvFileInput').click(); }
 
-     // 🛑 Import cancel karne ke liye global variable
     let isImportCancelled = false;
+    function stopCSVImport() { isImportCancelled = true; }
 
-    // 🛑 Stop Import Trigger Function
-    function stopCSVImport() {
-        isImportCancelled = true;
-    }
-
-    // 📤 SMART IMPORT CSV (Duplicate Skipping + Live Progress + Stop Button)
+    // 🔥 PERFECT 19-COLUMN PAPAPARSE CSV UPLOAD LOGIC
     function processImportCSV(e) {
         const file = e.target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = async function(event) {
-            const content = event.target.result;
-            let rows = content.split('\n').map(r => r.split(','));
-            if (rows.length <= 1) { alert("❌ File is empty!"); return; }
+        isImportCancelled = false;
+        let importedCount = 0;
+        let skippedCount = 0;
 
-            isImportCancelled = false;
-            let importedCount = 0;
-            let skippedCount = 0;
+        let statusBox = document.getElementById('importStatusBox');
+        if (!statusBox) {
+            statusBox = document.createElement('div');
+            statusBox.id = 'importStatusBox';
+            statusBox.style.cssText = "position:fixed; bottom:20px; right:20px; background:#0f172a; color:#fff; padding:15px 20px; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,0.5); z-index:9999; font-size:13px; display:flex; flex-direction:column; gap:8px;";
+            document.body.appendChild(statusBox);
+        }
+        statusBox.style.display = 'flex';
 
-            // Live Progress & Stop Button Screen Par Banaene Ke Liye
-            let statusBox = document.getElementById('importStatusBox');
-            if (!statusBox) {
-                statusBox = document.createElement('div');
-                statusBox.id = 'importStatusBox';
-                statusBox.style.cssText = "position:fixed; bottom:20px; right:20px; background:#0f172a; color:#fff; padding:15px 20px; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,0.5); z-index:9999; font-size:13px; display:flex; flex-direction:column; gap:8px;";
-                document.body.appendChild(statusBox);
-            }
-            statusBox.style.display = 'flex';
+        const existingMobiles = new Set(leads.map(l => String(getLeadVal(l, 'mobile', 'Mobile')).trim()).filter(Boolean));
+        const existingEmails = new Set(leads.map(l => String(getLeadVal(l, 'email', 'Email')).trim().toLowerCase()).filter(Boolean));
 
-            // Fast Matching Ke Liye Database Se Mobile Aur Email Ka Record Pehle Hi Nikal Liya
-            const existingMobiles = new Set(leads.map(l => String(getLeadVal(l, 'mobile', 'Mobile')).trim()).filter(Boolean));
-            const existingEmails = new Set(leads.map(l => String(getLeadVal(l, 'email', 'Email')).trim().toLowerCase()).filter(Boolean));
+        Papa.parse(file, {
+            skipEmptyLines: true,
+            complete: async function(results) {
+                const rows = results.data;
+                if (rows.length <= 1) { alert("❌ File is empty!"); return; }
 
-            for (let i = 1; i < rows.length; i++) {
-                // Agar user ne Stop button daba diya toh import wahin ruk jayega
-                if (isImportCancelled) {
-                    alert(`🛑 Import Stopped by User!\n\n✅ Uploaded: ${importedCount}\n⏩ Skipped (Duplicates): ${skippedCount}`);
-                    break;
-                }
-
-                if (rows[i].length >= 2 && rows[i][0]) {
-                    const cName = rows[i][0].replace(/"/g, '').trim();
-                    const pName = rows[i][1] ? rows[i][1].replace(/"/g, '').trim() : '';
-                    const mob = rows[i][3] ? rows[i][3].replace(/"/g, '').trim() : '';
-                    const eml = rows[i][4] ? rows[i][4].replace(/"/g, '').trim().toLowerCase() : '';
-                    const dir = rows[i][18] ? rows[i][18].replace(/"/g, '').trim() : 'Ajay Poddar';
-
-                    // 🔍 DUPLICATE CHECK: Mobile ya Email match hone par SKIPPED
-                    if ((mob && existingMobiles.has(mob)) || (eml && existingEmails.has(eml))) {
-                        skippedCount++;
-                    } else {
-                        const newLead = {
-                            id: Date.now() + i,
-                            clientName: cName,
-                            personName: pName || 'N/A',
-                            mobile: mob,
-                            email: eml,
-                            director: dir || 'Ajay Poddar',
-                            status: 'New'
-                        };
-
-                        // Firebase Cloud me push karein
-                        await db.ref("leads").push(newLead);
-
-                        // Set me add kar rahe hain taaki is CSV ke andar ki duplicate rows bhi dobara na jayen
-                        if (mob) existingMobiles.add(mob);
-                        if (eml) existingEmails.add(eml);
-                        importedCount++;
+                for (let i = 1; i < rows.length; i++) {
+                    if (isImportCancelled) {
+                        alert(`🛑 Import Stopped by User!\n\n✅ Uploaded: ${importedCount}\n⏩ Skipped: ${skippedCount}`);
+                        break;
                     }
+                    
+                    let row = rows[i];
+                    if (row.length >= 2 && (row[0] || row[1])) {
+                        // ✅ EXACT 19 COLUMNS MAPPING matching CSV file
+                        const cName       = row[0] || '';
+                        const pName       = row[1] || 'N/A';
+                        const desig       = row[2] || '';
+                        const mob         = row[3] || '';
+                        const eml         = (row[4] || '').toLowerCase();
+                        const stdCode     = row[5] || '';
+                        const workTel     = row[6] || '';
+                        const address     = row[7] || '';
+                        const city        = row[8] || '';
+                        const country     = row[9] || '';
+                        const source      = row[10] || '';
+                        const status      = row[11] || 'New';
+                        const proposal    = parseFloat(row[12]) || 0;
+                        const agreed      = parseFloat(row[13]) || 0;
+                        const discountAmt = parseFloat(row[14]) || 0;
+                        const discountPer = row[15] || '';
+                        const reference   = row[16] || ''; 
+                        const followUpNotes = row[17] || '';
+                        const dir         = row[18] ? row[18] : 'Ajay Poddar';
+
+                        // 🔍 DUPLICATE CHECK
+                        if ((mob && existingMobiles.has(mob.trim())) || (eml && existingEmails.has(eml.trim()))) {
+                            skippedCount++;
+                        } else {
+                            const newLead = {
+                                id: Date.now() + i,
+                                clientName: cName.trim(),
+                                personName: pName.trim(),
+                                designation: desig.trim(),
+                                mobile: mob.trim(),
+                                email: eml.trim(),
+                                stdCode: stdCode.trim(),
+                                workTel: workTel.trim(),
+                                address: address.trim(),
+                                city: city.trim(),
+                                country: country.trim(),
+                                source: source.trim(),
+                                status: status.trim(),
+                                proposal: proposal,
+                                agreed: agreed,
+                                discountAmt: discountAmt,
+                                discountPer: discountPer.trim(),
+                                reference: reference.trim(),
+                                followUpNotes: followUpNotes.trim(),
+                                director: dir.trim(),
+                                followUps: []
+                            };
+
+                            await db.ref("leads").push(newLead);
+
+                            if (mob) existingMobiles.add(mob.trim());
+                            if (eml) existingEmails.add(eml.trim());
+                            importedCount++;
+                        }
+                    }
+
+                    statusBox.innerHTML = `
+                        <span>⏳ Processing Row <strong>${i}</strong> of <strong>${rows.length - 1}</strong></span>
+                        <span style="color:#8cc63f;">✅ Added: ${importedCount} | ⏩ Skipped: ${skippedCount}</span>
+                        <button onclick="stopCSVImport()" style="background:#dc2626; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px; margin-top:4px;">🛑 Stop Import</button>
+                    `;
                 }
 
-                // Screen par real-time progress update
-                statusBox.innerHTML = `
-                    <span>⏳ Processing Row <strong>${i}</strong> of <strong>${rows.length - 1}</strong></span>
-                    <span style="color:#8cc63f;">✅ Added: ${importedCount} | ⏩ Skipped: ${skippedCount}</span>
-                    <button onclick="stopCSVImport()" style="background:#dc2626; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px; margin-top:4px;">🛑 Stop Import</button>
-                `;
-            }
+                if (!isImportCancelled) {
+                    alert(`🎉 Import Complete!\n\n✅ Newly Uploaded: ${importedCount}\n⏩ Duplicates Skipped: ${skippedCount}`);
+                }
 
-            if (!isImportCancelled) {
-                alert(`🎉 Import Complete!\n\n✅ Newly Uploaded: ${importedCount}\n⏩ Duplicates Skipped: ${skippedCount}`);
+                statusBox.style.display = 'none';
+                document.getElementById('csvFileInput').value = '';
             }
-
-            statusBox.style.display = 'none';
-            document.getElementById('csvFileInput').value = '';
-        };
-        reader.readAsText(file);
+        });
     }
 
     function exportToCSV() {
         let exportLeads = (currentTab === 'All Leads') ? leads : leads.filter(l => getLeadVal(l, 'director', 'Director') === currentTab);
         if (exportLeads.length === 0) { alert('No leads to export!'); return; }
 
-        let csv = 'Client Name,Person Name,Mobile,Email,Director,Status\n';
+        let csv = 'Company Name,Person Name,Mobile,Email,Director,Status\n';
         exportLeads.forEach(l => {
-            csv += `"${getLeadVal(l, 'clientName')}","${getLeadVal(l, 'personName')}","${getLeadVal(l, 'mobile')}","${getLeadVal(l, 'email')}","${getLeadVal(l, 'director')}","${getLeadVal(l, 'status')}"\n`;
+            csv += `"${getLeadVal(l, 'clientName', 'Company Name')}","${getLeadVal(l, 'personName')}","${getLeadVal(l, 'mobile')}","${getLeadVal(l, 'email')}","${getLeadVal(l, 'director')}","${getLeadVal(l, 'status')}"\n`;
         });
 
         const blob = new Blob([csv], { type: 'text/csv;' });
@@ -1135,14 +1155,11 @@
         link.click();
     }
 
-    function normalizeFollowUpHistory() {
-        leads.forEach(l => { if (!Array.isArray(l.followUps)) l.followUps = []; });
-    }
+    function normalizeFollowUpHistory() { leads.forEach(l => { if (!Array.isArray(l.followUps)) l.followUps = []; }); }
 
     window.onclick = function(event) { if (event.target.classList.contains('modal')) event.target.style.display = "none"; };
     populateCountries();
 
-    // ⏰ AUTOMATIC FOLLOW-UP REMINDER FUNCTION (3 TIMES MAX REMINDER)
     function checkFollowUpReminders() {
         if (!currentUser) return; 
         
@@ -1155,16 +1172,13 @@
 
             if (lead.followUps && lead.followUps.length > 0) {
                 const latestFollowUp = lead.followUps[lead.followUps.length - 1]; 
-                
                 if (latestFollowUp.nextDate) {
                     const nextDateObj = new Date(latestFollowUp.nextDate);
-                    
                     if (!isNaN(nextDateObj) && nextDateObj <= now) {
                         const reminderKey = String(lead.id) + "_" + latestFollowUp.nextDate; 
                         let remindCount = remindedLeads[reminderKey] || 0;
-                        
                         if (remindCount < 3) {
-                            alert(`⏰ REMINDER (${remindCount + 1}/3): Follow-up Due!\n\nClient: ${getLeadVal(lead, 'clientName', 'Client Name')}\nPerson: ${getLeadVal(lead, 'personName', 'Person Name')}\nMobile: ${getLeadVal(lead, 'mobile', 'Mobile')}\n\nLast Note: ${latestFollowUp.note}`);
+                            alert(`⏰ REMINDER (${remindCount + 1}/3): Follow-up Due!\n\nCompany: ${getLeadVal(lead, 'clientName', 'Client Name', 'Company Name')}\nPerson: ${getLeadVal(lead, 'personName', 'Person Name')}\nMobile: ${getLeadVal(lead, 'mobile', 'Mobile')}\n\nLast Note: ${latestFollowUp.note}`);
                             remindedLeads[reminderKey] = remindCount + 1;
                             localStorage.setItem('crm_reminded_leads_v2', JSON.stringify(remindedLeads));
                         }
@@ -1174,7 +1188,6 @@
         });
     }
 
-    // Timer Interval Starts for Reminders
     setInterval(checkFollowUpReminders, 60000);
     setTimeout(checkFollowUpReminders, 3000);
 

@@ -488,13 +488,29 @@
     </div>
 </div>
 
+ <!-- Firebase Libraries (Must be in head or before main script) -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
 <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbw86gfGOsXEDu2nAhxRJpKe7jyDmWKfyqN0klPkFFHwcY3Qui8QoqmY8WrujhruGSUD/exec";
-    const API_KEY = "VY2S86T9yr2nN123"; 
+    // 🔥 FIREBASE CONFIGURATION
+    const firebaseConfig = {
+      apiKey: "AIzaSyDsFYpk4qCiE4pSsju8h1Ms_lElxTu8ocY",
+      authDomain: "environics-crm.firebaseapp.com",
+      databaseURL: "https://environics-crm-default-rtdb.firebaseio.com",
+      projectId: "environics-crm",
+      storageBucket: "environics-crm.firebasestorage.app",
+      messagingSenderId: "294154079975",
+      appId: "1:294154079975:web:3c8f6cc233089c30829c42"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
     const DEFAULT_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"; 
 
-    let leads = JSON.parse(localStorage.getItem('crm_leads_v10')) || [];
+    let leads = [];
     let currentEditingLeadId = null;
     let currentUser = null; 
     let currentTab = 'All Leads';
@@ -513,6 +529,21 @@
 
     const form = document.getElementById('crmForm');
 
+    // 🔥 Realtime Listener: Automatic Cloud Data Sync
+    db.ref("leads").on("value", (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            leads = Object.keys(data).map(key => ({ ...data[key], firebaseKey: key }));
+        } else {
+            leads = [];
+        }
+        localStorage.setItem('crm_leads_v10', JSON.stringify(leads));
+        if (currentUser) {
+            normalizeFollowUpHistory();
+            renderLeads();
+        }
+    });
+
     async function hashPIN(pin) {
         const msgBuffer = new TextEncoder().encode(pin);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -520,7 +551,6 @@
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    // 🚨 UPDATED LOGIN LOGIC (Fixed password persistence bug)
     async function handleLogin(e) {
         e.preventDefault();
         const role = document.getElementById('loginRole').value;
@@ -530,27 +560,15 @@
         if (storedPasswords[role] === inputHash) {
             if (forcePassChange[role]) {
                 alert("⚠️ Your password has been reset by the Admin. Please set a new password.");
-                
                 let newPass = prompt("✨ Enter NEW Password:");
-                if (!newPass || newPass.trim() === "") {
-                    alert("❌ Password change cancelled. Login failed.");
-                    return; 
-                }
-                
+                if (!newPass || newPass.trim() === "") { alert("❌ Password change cancelled. Login failed."); return; }
                 let confirmPass = prompt("🔄 Confirm NEW Password:");
-                if (newPass !== confirmPass) {
-                    alert("❌ Passwords do not match! Please login again and retry.");
-                    return;
-                }
+                if (newPass !== confirmPass) { alert("❌ Passwords do not match! Please login again."); return; }
                 
                 storedPasswords[role] = await hashPIN(newPass.trim());
-                
-                // परमानेंट सेव करने के लिए localStorage में अपडेट किया गया
                 localStorage.setItem('crm_user_passwords', JSON.stringify(storedPasswords));
-                
                 forcePassChange[role] = false;
                 localStorage.setItem('crm_force_pass', JSON.stringify(forcePassChange));
-                
                 alert("✅ Password successfully updated! Logging in...");
             }
 
@@ -587,11 +605,7 @@
         
         const dirSelect = document.getElementById('director');
         dirSelect.value = defaultTab;
-        if (currentUser !== 'Admin') {
-            dirSelect.disabled = true;
-        } else {
-            dirSelect.disabled = false;
-        }
+        dirSelect.disabled = (currentUser !== 'Admin');
         
         filterTable(defaultTab);
     }
@@ -618,21 +632,16 @@
                         localStorage.setItem('crm_user_passwords', JSON.stringify(storedPasswords));
                         alert("✅ Password changed successfully!");
                     }
-                } else {
-                    alert("❌ Incorrect Current Password!");
-                }
+                } else { alert("❌ Incorrect Current Password!"); }
             }
         } 
         else if (action.startsWith("Reset_")) {
             const userToReset = action.split("_")[1]; 
-            
             if (confirm(`🛠️ Are you sure you want to reset the password for ${userToReset} to '1234'?`)) {
                 storedPasswords[userToReset] = DEFAULT_HASH;
                 localStorage.setItem('crm_user_passwords', JSON.stringify(storedPasswords));
-                
                 forcePassChange[userToReset] = true;
                 localStorage.setItem('crm_force_pass', JSON.stringify(forcePassChange));
-                
                 alert(`✅ Password for ${userToReset} successfully reset to 1234.`);
             }
         }
@@ -647,9 +656,7 @@
 
     function escapeHTML(str) {
         if (!str && str !== 0) return '';
-        return String(str).replace(/[&<>'"]/g, 
-            tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-        );
+        return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
     }
 
     function checkCustomDesignation() {
@@ -669,82 +676,48 @@
     const countryData = [
         { name: "India", code: "+91" }, { name: "United States", code: "+1" }, { name: "United Arab Emirates", code: "+971" },
         { name: "United Kingdom", code: "+44" }, { name: "Australia", code: "+61" }, { name: "Canada", code: "+1" },
-        { name: "Singapore", code: "+65" }, { name: "Germany", code: "+49" }, { name: "Saudi Arabia", code: "+966" },
-        { name: "Afghanistan", code: "+93" }, { name: "Bangladesh", code: "+880" }, { name: "Bhutan", code: "+975" },
-        { name: "China", code: "+86" }, { name: "France", code: "+33" }, { name: "Indonesia", code: "+62" },
-        { name: "Japan", code: "+81" }, { name: "Malaysia", code: "+60" }, { name: "Nepal", code: "+977" },
-        { name: "Oman", code: "+968" }, { name: "Qatar", code: "+974" }, { name: "South Africa", code: "+27" },
-        { name: "Sri Lanka", code: "+94" }, { name: "Thailand", code: "+66" }, { name: "Vietnam", code: "+84" }
+        { name: "Singapore", code: "+65" }, { name: "Germany", code: "+49" }, { name: "Saudi Arabia", code: "+966" }
     ];
 
     function populateCountries() {
         const countrySelect = document.getElementById('country');
         const codeSelect = document.getElementById('countryCode');
-        countrySelect.innerHTML = '';
-        codeSelect.innerHTML = '';
+        countrySelect.innerHTML = ''; codeSelect.innerHTML = '';
 
         countryData.forEach(c => {
-            const optC = document.createElement('option');
-            optC.value = c.name;
-            optC.innerText = c.name;
+            const optC = document.createElement('option'); optC.value = c.name; optC.innerText = c.name;
             countrySelect.appendChild(optC);
-
-            const optCode = document.createElement('option');
-            optCode.value = c.code;
-            optCode.innerText = c.code; 
+            const optCode = document.createElement('option'); optCode.value = c.code; optCode.innerText = c.code; 
             codeSelect.appendChild(optCode);
         });
 
-        countrySelect.value = "India";
-        codeSelect.value = "+91";
+        countrySelect.value = "India"; codeSelect.value = "+91";
     }
 
     function autoPickCountryCode() {
         const selectedCountry = document.getElementById('country').value;
         const matched = countryData.find(c => c.name === selectedCountry);
-        if (matched) {
-            document.getElementById('countryCode').value = matched.code;
-        }
+        if (matched) document.getElementById('countryCode').value = matched.code;
     }
 
-    function parseNumber(val) {
-        if (!val) return 0;
-        return parseFloat(val.toString().replace(/,/g, '')) || 0;
-    }
+    function parseNumber(val) { return !val ? 0 : parseFloat(val.toString().replace(/,/g, '')) || 0; }
+    function formatNumber(num) { return (!num && num !== 0) ? '0' : new Intl.NumberFormat('en-IN').format(num); }
 
-    function formatNumber(num) {
-        if (!num && num !== 0) return '0';
-        return new Intl.NumberFormat('en-IN').format(num);
-    }
-
-    function handleAmountFocus(input) {
-        const raw = parseNumber(input.value);
-        input.value = raw > 0 ? raw : '';
-    }
-
-    function handleAmountBlur(input) {
-        const raw = parseNumber(input.value);
-        input.value = raw > 0 ? formatNumber(raw) : '';
-        calculateDiscount();
-    }
+    function handleAmountFocus(input) { const raw = parseNumber(input.value); input.value = raw > 0 ? raw : ''; }
+    function handleAmountBlur(input) { const raw = parseNumber(input.value); input.value = raw > 0 ? formatNumber(raw) : ''; calculateDiscount(); }
 
     function calculateDiscount() {
-        const propInput = document.getElementById('proposal');
-        const agreedInput = document.getElementById('agreed');
-        const discAmtInput = document.getElementById('discountAmt');
-        const discPerInput = document.getElementById('discountPer');
-
-        const prop = parseNumber(propInput.value);
-        const agreed = parseNumber(agreedInput.value);
+        const prop = parseNumber(document.getElementById('proposal').value);
+        const agreed = parseNumber(document.getElementById('agreed').value);
 
         if (prop > 0 && agreed >= 0) {
             const discount = prop - agreed;
             const percentage = (discount / prop) * 100;
-            discAmtInput.value = discount > 0 ? formatNumber(discount.toFixed(2)) : '0';
-            discPerInput.value = percentage > 0 ? percentage.toFixed(1) + '%' : '0%';
+            document.getElementById('discountAmt').value = discount > 0 ? formatNumber(discount.toFixed(2)) : '0';
+            document.getElementById('discountPer').value = percentage > 0 ? percentage.toFixed(1) + '%' : '0%';
         } else {
-            discAmtInput.value = '';
-            discPerInput.value = '';
+            document.getElementById('discountAmt').value = '';
+            document.getElementById('discountPer').value = '';
         }
     }
 
@@ -767,11 +740,9 @@
         const filtered = leads.filter(l => {
             const tabMatch = (currentTab === 'All Leads') || (getLeadVal(l, 'director', 'Director') === currentTab);
             if(!tabMatch) return false;
-
             const cName = getLeadVal(l, 'clientName', 'Client Name').toString().toLowerCase();
             const pName = getLeadVal(l, 'personName', 'Person Name').toString().toLowerCase();
-            const dName = getLeadVal(l, 'director', 'Director').toString().toLowerCase(); 
-            return cName.includes(query) || pName.includes(query) || dName.includes(query);
+            return cName.includes(query) || pName.includes(query);
         });
 
         if (filtered.length === 0) {
@@ -780,15 +751,10 @@
         }
 
         filtered.forEach(l => {
-            const cName = getLeadVal(l, 'clientName', 'Client Name') || 'N/A';
-            const pName = getLeadVal(l, 'personName', 'Person Name') || '-';
-            const status = getLeadVal(l, 'status', 'Status') || 'New';
-            const dir = getLeadVal(l, 'director', 'Director') || '';
             const itemDiv = document.createElement('div');
             itemDiv.style.cssText = "background:#cbd5e1; padding:8px 12px; margin-bottom:4px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:13px;";
-            
             itemDiv.innerHTML = `
-                <span><strong>${escapeHTML(cName)}</strong> (${escapeHTML(pName)}) ${dir ? `<small style="color:#0369a1;">[${escapeHTML(dir)}]</small>` : ''} - <small style="color:#334155;">${escapeHTML(status)}</small></span>
+                <span><strong>${escapeHTML(getLeadVal(l, 'clientName', 'Client Name'))}</strong> (${escapeHTML(getLeadVal(l, 'personName', 'Person Name'))})</span>
                 <button type="button" onclick="loadLeadToForm(${l.id})" style="background:#d97706; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">Edit</button>
             `;
             resultsDiv.appendChild(itemDiv);
@@ -798,117 +764,59 @@
     function loadLeadToForm(id) {
         const l = leads.find(item => item.id === id);
         if (!l) return;
-
         currentEditingLeadId = id;
         
         document.getElementById('director').value = getLeadVal(l, 'director', 'Director') || '';
         document.getElementById('clientName').value = getLeadVal(l, 'clientName', 'Client Name');
         document.getElementById('personName').value = getLeadVal(l, 'personName', 'Person Name');
-        
-        const desigVal = getLeadVal(l, 'designation', 'Designation');
-        const desigSelect = document.getElementById('designation');
-        const customInput = document.getElementById('customDesignation');
-        let optionExists = Array.from(desigSelect.options).some(opt => opt.value === desigVal);
-
-        if (desigVal && !optionExists) {
-            desigSelect.value = "Other";
-            customInput.style.display = "block";
-            customInput.value = desigVal;
-            customInput.required = true;
-        } else {
-            desigSelect.value = desigVal;
-            customInput.style.display = "none";
-            customInput.value = "";
-            customInput.required = false;
-        }
-
-        document.getElementById('country').value = getLeadVal(l, 'country', 'Country') || 'India';
-        document.getElementById('countryCode').value = getLeadVal(l, 'countryCode') || '+91';
         document.getElementById('mobile').value = getLeadVal(l, 'mobile', 'Mobile').toString().replace(/^'\+91\s*/, '');
         document.getElementById('email').value = getLeadVal(l, 'email', 'Email');
-        document.getElementById('stdCode').value = getLeadVal(l, 'stdCode', 'STD Code');
-        document.getElementById('workTel').value = getLeadVal(l, 'workTel', 'Work Tel');
-        document.getElementById('address').value = getLeadVal(l, 'address', 'Address');
-        document.getElementById('city').value = getLeadVal(l, 'city', 'City');
-        document.getElementById('source').value = getLeadVal(l, 'source', 'Source');
         document.getElementById('status').value = getLeadVal(l, 'status', 'Status') || 'New';
         
         const prop = parseNumber(getLeadVal(l, 'proposal', 'Original Proposal'));
         const agreed = parseNumber(getLeadVal(l, 'agreed', 'Final Agreed'));
         document.getElementById('proposal').value = prop ? formatNumber(prop) : '';
         document.getElementById('agreed').value = agreed ? formatNumber(agreed) : '';
-        
         calculateDiscount();
 
-        document.getElementById('reference').value = getLeadVal(l, 'reference', 'Reference', 'Summary', 'summary');
-        document.getElementById('followUpNotes').value = getLeadVal(l, 'followUpNotes', 'Follow Up Notes', 'Remarks', 'remarks');
+        document.getElementById('reference').value = getLeadVal(l, 'reference', 'Reference');
+        document.getElementById('followUpNotes').value = getLeadVal(l, 'followUpNotes', 'Follow Up Notes');
 
         document.getElementById('formHeader').innerText = "✏️ Edit Lead Details";
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.innerText = "Update Lead";
         submitBtn.style.background = "#d97706";
-        document.getElementById('cancelEditBtn').style.display = "block";
         document.getElementById('crmForm').scrollIntoView({ behavior: 'smooth' });
     }
 
-    function clearSearch() {
-        document.getElementById('searchInput').value = '';
-        document.getElementById('searchResults').innerHTML = '';
-    }
+    function clearSearch() { document.getElementById('searchInput').value = ''; document.getElementById('searchResults').innerHTML = ''; }
 
     function resetFormState() {
         currentEditingLeadId = null;
         form.reset();
-        
-        const customInput = document.getElementById('customDesignation');
-        customInput.style.display = "none";
-        customInput.value = "";
-        customInput.required = false;
-
         document.getElementById('country').value = "India";
         document.getElementById('countryCode').value = "+91";
-
         document.getElementById('director').value = currentTab;
-
         document.getElementById('formHeader').innerText = "Add New Lead / Customer";
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.innerText = "Save / Update Lead";
         submitBtn.style.background = "linear-gradient(135deg, #16a34a 0%, #15803d 100%)";
-        document.getElementById('cancelEditBtn').style.display = "none";
         clearSearch();
     }
 
-     form.addEventListener('submit', async (e) => {
+    // 🔥 FORM SUBMISSION: DIRECTLY TO FIREBASE REALTIME CLOUD
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         let finalDirector = document.getElementById('director').value;
         if(currentUser !== 'Admin') finalDirector = currentUser;
 
         if (finalDirector === 'All Leads' || finalDirector === '') {
-            alert("⚠️ Please select a specific Director (Ajay, Pranav, or Manisha) to save this lead.");
+            alert("⚠️ Please select a specific Director to save this lead.");
             return; 
         }
 
-        if (!currentEditingLeadId) { 
-            const cName = document.getElementById('clientName').value.trim().toLowerCase();
-            const pName = document.getElementById('personName').value.trim().toLowerCase();
-            
-            const isDuplicate = leads.find(lead => {
-                const existingClient = getLeadVal(lead, 'clientName', 'Client Name').toLowerCase();
-                const existingPerson = getLeadVal(lead, 'personName', 'Person Name').toLowerCase();
-                return (cName && existingClient === cName) || (pName && existingPerson === pName);
-            });
-
-            if (isDuplicate) {
-                const proceed = confirm(`⚠️ DHYAAN DEIN: Yeh Lead pehle se maujood hai:\nClient: ${getLeadVal(isDuplicate, 'clientName', 'Client Name')}\nPerson: ${getLeadVal(isDuplicate, 'personName', 'Person Name')}\n\nKya aap phir bhi iski Duplicate entry banana chahte hain?`);
-                if (!proceed) {
-                    return; 
-                }
-            }
-        }
-
         const submitBtn = document.getElementById('submitBtn');
-        const originalText = submitBtn.innerText;
         submitBtn.innerText = "Saving... ⏳";
         submitBtn.disabled = true;
 
@@ -938,36 +846,22 @@
             discountPer: document.getElementById('discountPer').value,
             reference: document.getElementById('reference').value,
             followUpNotes: document.getElementById('followUpNotes').value,
-            "Follow Up Notes": document.getElementById('followUpNotes').value,
             followUps: existingLead ? (existingLead.followUps || []) : []
         };
 
-        if (currentEditingLeadId) {
-            const index = leads.findIndex(item => item.id === currentEditingLeadId);
-            if (index !== -1) leads[index] = leadData;
-        } else { 
-            leads.push(leadData); 
-        }
-
-        saveAndRender();
-
         try {
-            await fetch(scriptURL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({
-                    apiKey: API_KEY,
-                    action: "saveLead",
-                    data: leadData
-                })
-            });
-            alert("✅ Lead saved & sent to Google Sheet!");
+            if (currentEditingLeadId && existingLead && existingLead.firebaseKey) {
+                // Update Existing Lead in Firebase
+                await db.ref("leads/" + existingLead.firebaseKey).update(leadData);
+            } else {
+                // Save New Lead to Firebase
+                await db.ref("leads").push(leadData);
+            }
+            alert("✅ Lead successfully saved to Firebase Cloud!");
         } catch (err) {
-            console.error("Google Sheet sync error:", err);
-            alert("⚠️ Lead saved locally. Google Sheet sync could not be confirmed.");
+            alert("⚠️ Error saving to Firebase: " + err.message);
         } finally {
-            submitBtn.innerText = originalText;
+            submitBtn.innerText = "Save / Update Lead";
             submitBtn.disabled = false;
             resetFormState();
         }
@@ -984,10 +878,7 @@
         const closedCount = filteredLeads.filter(l => getLeadVal(l, 'status', 'Status') === 'Closed').length;
         document.getElementById('statClosed').innerText = closedCount;
         
-        const totalVal = filteredLeads.reduce((acc, curr) => {
-            const val = parseNumber(getLeadVal(curr, 'agreed', 'Final Agreed')) || parseNumber(getLeadVal(curr, 'proposal', 'Original Proposal'));
-            return acc + val;
-        }, 0);
+        const totalVal = filteredLeads.reduce((acc, curr) => acc + parseNumber(getLeadVal(curr, 'agreed', 'proposal')), 0);
         document.getElementById('statValue').innerText = '₹' + formatNumber(totalVal);
     }
 
@@ -995,10 +886,7 @@
         const tbody = document.getElementById('leadTableBody');
         tbody.innerHTML = '';
 
-        let tabLeads = leads;
-        if (currentTab !== 'All Leads') {
-            tabLeads = leads.filter(l => getLeadVal(l, 'director', 'Director') === currentTab);
-        }
+        let tabLeads = (currentTab === 'All Leads') ? leads : leads.filter(l => getLeadVal(l, 'director', 'Director') === currentTab);
 
         if (!tabLeads || tabLeads.length === 0) {
             tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#64748b; padding: 20px;">No leads recorded yet in this section.</td></tr>`;
@@ -1006,33 +894,24 @@
             return;
         }
 
-        tabLeads.forEach((lead, index) => {
-            if (!lead.id) lead.id = Date.now() + index;
-
+        tabLeads.forEach((lead) => {
             const director = getLeadVal(lead, 'director', 'Director'); 
-             const directorHTML = director 
-                ? `<span>${escapeHTML(director)}</span>` 
-                : `<span style="color:#94a3b8;">-</span>`;
-
             const cName = getLeadVal(lead, 'clientName', 'Client Name') || 'N/A';
             const pName = getLeadVal(lead, 'personName', 'Person Name') || '-';
-            const desig = getLeadVal(lead, 'designation', 'Designation') || '-';
             const source = getLeadVal(lead, 'source', 'Source') || 'N/A';
             const status = getLeadVal(lead, 'status', 'Status') || 'New';
-            const agreed = parseNumber(getLeadVal(lead, 'agreed', 'Final Agreed')) || parseNumber(getLeadVal(lead, 'proposal', 'Original Proposal'));
+            const agreed = parseNumber(getLeadVal(lead, 'agreed', 'proposal'));
 
             const badgeClass = status.replace(/\s+/g, '');
-            const adminDeleteHTML = (currentUser === "Admin") 
-                ? `<button class="btn-action btn-delete" onclick="deleteLead(${lead.id})">Delete</button>` 
-                : ``;
+            const adminDeleteHTML = (currentUser === "Admin") ? `<button class="btn-action btn-delete" onclick="deleteLead('${lead.firebaseKey}')">Delete</button>` : ``;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${directorHTML}</td>
+                <td><small style="color:#0369a1; font-weight:700;">${escapeHTML(director)}</small></td>
                 <td><strong>${escapeHTML(cName)}</strong></td>
-                <td>${escapeHTML(pName)} <br><small style="color:#475569;">${escapeHTML(desig)}</small></td>
-                 <td><span>${escapeHTML(source)}</span></td>
-<td><span>${escapeHTML(status)}</span></td>
+                <td>${escapeHTML(pName)}</td>
+                <td><small style="background:#bae6fd; color:#0369a1; padding:3px 8px; border-radius:4px;">${escapeHTML(source)}</small></td>
+                <td><span class="badge badge-${badgeClass}">${escapeHTML(status)}</span></td>
                 <td>₹${formatNumber(agreed)}</td>
                 <td>
                     <button class="btn-action btn-note" onclick="openFollowUpModal(${lead.id})">+ Note</button>
@@ -1045,229 +924,56 @@
         updateStats(tabLeads);
     }
 
+    // 🔥 DELETE LEAD DIRECTLY FROM FIREBASE
+    async function deleteLead(firebaseKey) {
+        if (currentUser !== "Admin") { alert("🛑 Access Denied!"); return; }
+        if (confirm('Are you sure you want to permanently delete this lead?')) {
+            try {
+                await db.ref("leads/" + firebaseKey).remove();
+                alert('✅ Lead deleted permanently from Firebase Database.');
+            } catch (err) {
+                alert('⚠️ Delete failed: ' + err.message);
+            }
+        }
+    }
+
     function openFollowUpModal(id) {
         const lead = leads.find(l => l.id === id);
         if (!lead) return;
-
         document.getElementById('followUpLeadId').value = id;
         document.getElementById('fuStatus').value = getLeadVal(lead, 'status', 'Status') || 'New';
-        document.getElementById('fuMember').value = '';
-        document.getElementById('fuNote').value = '';
-        document.getElementById('fuNextDate').value = '';
         document.getElementById('followUpModal').style.display = 'block';
     }
 
-    function closeFollowUpModal() {
-        document.getElementById('followUpModal').style.display = 'none';
-    }
+    function closeFollowUpModal() { document.getElementById('followUpModal').style.display = 'none'; }
 
     async function saveFollowUp(e) {
         e.preventDefault();
         const id = parseNumber(document.getElementById('followUpLeadId').value);
         const lead = leads.find(l => l.id === id);
-        if (!lead) {
-            alert("❌ Lead not found.");
-            return;
-        }
+        if (!lead || !lead.firebaseKey) return;
 
         const newStatus = document.getElementById('fuStatus').value;
-        const member = document.getElementById('fuMember').value.trim();
         const note = document.getElementById('fuNote').value.trim();
-        const nextDate = document.getElementById('fuNextDate').value.trim();
 
         if (!lead.followUps) lead.followUps = [];
-
-        const today = new Date().toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-        });
-
         lead.followUps.push({
-            date: today,
-            member: member || 'Team Member',
+            date: new Date().toLocaleDateString('en-IN'),
+            member: document.getElementById('fuMember').value.trim() || 'Team Member',
             status: newStatus,
             note: note,
-            nextDate: nextDate || 'Not Specified'
+            nextDate: document.getElementById('fuNextDate').value.trim()
         });
 
         lead.followUpNotes = note;
-        lead['Follow Up Notes'] = note;
         lead.status = newStatus;
-        lead['Status'] = newStatus;
 
-        saveAndRender();
-
-        try {
-            await fetch(scriptURL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ 
-                    apiKey: API_KEY,
-                    action: 'saveLead', 
-                    data: lead 
-                })
-            });
-            closeFollowUpModal();
-            alert("✅ Follow-up saved & sent to Google Sheet!");
-        } catch (err) {
-            console.error("Follow-up sync error:", err);
-            closeFollowUpModal();
-            alert("⚠️ Follow-up saved locally, but Google Sheet sync failed: " + err.message);
-        }
+        await db.ref("leads/" + lead.firebaseKey).update(lead);
+        closeFollowUpModal();
+        alert("✅ Follow-up saved in Firebase!");
     }
 
-    function viewLeadDetails(id) {
-        const l = leads.find(item => item.id === id);
-        if (!l) return;
-        
-        const dir = getLeadVal(l, 'director', 'Director') || 'N/A'; 
-        const cName = getLeadVal(l, 'clientName', 'Client Name') || 'N/A';
-        const pName = getLeadVal(l, 'personName', 'Person Name') || 'N/A';
-        const desig = getLeadVal(l, 'designation', 'Designation') || 'N/A';
-        const mob = getLeadVal(l, 'mobile', 'Mobile') || 'N/A';
-        const email = getLeadVal(l, 'email', 'Email') || 'N/A';
-        const std = getLeadVal(l, 'stdCode', 'STD Code');
-        const workTel = getLeadVal(l, 'workTel', 'Work Tel');
-        const source = getLeadVal(l, 'source', 'Source') || 'N/A';
-        const city = getLeadVal(l, 'city', 'City');
-        const country = getLeadVal(l, 'country', 'Country') || 'India';
-        const status = getLeadVal(l, 'status', 'Status') || 'New';
-        const prop = parseNumber(getLeadVal(l, 'proposal', 'Original Proposal'));
-        const agreed = parseNumber(getLeadVal(l, 'agreed', 'Final Agreed'));
-        const discAmt = getLeadVal(l, 'discountAmt', 'Discount Amt');
-        const discPer = getLeadVal(l, 'discountPer', 'Discount %');
-        
-        const referenceText = getLeadVal(l, 'reference', 'Reference', 'Summary', 'summary');
-        const followUpNoteText = getLeadVal(l, 'followUpNotes', 'Follow Up Notes', 'Remarks', 'remarks');
-
-        let followUpHTML = `<h3 style="color:#0f172a; margin-bottom:12px; font-size:15px; border-bottom: 2px solid #cbd5e1; padding-bottom: 6px;">💬 Follow-up & Discussion Notes</h3>`;
-        let hasAnyNote = false;
-
-        if (followUpNoteText) {
-            hasAnyNote = true;
-            followUpHTML += `
-            <div style="background:#ffffff; padding:12px; margin-bottom:10px; border-left:5px solid #16a34a; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
-                <div style="display:flex; justify-content:space-between; font-size:12px; color:#475569; font-weight:bold; margin-bottom:4px;">
-                    <span>📄 Initial Sheet / Main Follow Up Note</span>
-                </div>
-                <span style="font-size:13px; color:#0f172a; display:block; line-height:1.5;">${escapeHTML(followUpNoteText)}</span>
-            </div>`;
-        }
-
-        const history = Array.isArray(l.followUps) ? l.followUps : [];
-        if (history.length > 0) {
-            hasAnyNote = true;
-            history.slice().reverse().forEach(f => {
-                followUpHTML += `
-                <div style="background:#ffffff; padding:12px; margin-bottom:10px; border-left:5px solid #2563eb; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
-                    <div style="display:flex; justify-content:space-between; font-size:12px; color:#475569; font-weight:bold; margin-bottom:6px;">
-                        <span>📅 ${escapeHTML(f.date)}</span>
-                        <span>👤 ${escapeHTML(f.member) || 'Team Member'}</span>
-                    </div>
-                    <div style="margin-bottom:6px;">
-                        <span class="badge badge-${escapeHTML((f.status || 'New').replace(/\s+/g, ''))}">Status: ${escapeHTML(f.status)}</span>
-                    </div>
-                    <span style="font-size:13px; color:#0f172a; display:block; line-height:1.4;">${escapeHTML(f.note)}</span>
-                    ${f.nextDate ? `<small style="color:#d97706; font-weight:bold; margin-top:6px; display:block;">⏰ Next Call / Meeting: ${escapeHTML(f.nextDate)}</small>` : ''}
-                </div>`;
-            });
-        }
-
-        if (!hasAnyNote) {
-            followUpHTML += `<div style="background:#ffffff; padding:12px; border-radius:8px; border:1px dashed #cbd5e1; color:#64748b; font-size:13px;">No follow-up notes recorded for this lead yet.</div>`;
-        }
-
-        document.getElementById('modalClientTitle').innerText = `${cName} - Full Profile`;
-        document.getElementById('modalDetails').innerHTML = `
-            <p><b>Card Belongs To:</b> <span style="color:#0369a1; font-weight:bold;">${escapeHTML(dir)}</span></p>
-            <p><b>Contact Person:</b> ${escapeHTML(pName)}</p>
-            <p><b>Designation:</b> ${escapeHTML(desig)}</p>
-            <p><b>Mobile:</b> ${escapeHTML(mob)}</p>
-            <p><b>Email:</b> ${escapeHTML(email)}</p>
-            <p><b>Work Tele No:</b> ${std ? '(' + escapeHTML(std) + ') ' : ''}${escapeHTML(workTel) || 'N/A'}</p>
-            <p><b>Source of Lead:</b> ${escapeHTML(source)}</p>
-            <p><b>Location:</b> ${city ? escapeHTML(city) + ', ' : ''}${escapeHTML(country)}</p>
-            <p><b>Current Stage:</b> <span class="badge badge-${escapeHTML(status.replace(/\s+/g, ''))}">${escapeHTML(status)}</span></p>
-            <p><b>Original Proposal:</b> ₹${formatNumber(prop)}</p>
-            <p><b>Final Agreed:</b> ₹${formatNumber(agreed)}</p>
-            <p><b>Discount Given:</b> ₹${formatNumber(discAmt)} (${escapeHTML(discPer) || '0%'})</p>
-            
-            <div style="grid-column: span 2; background:#ffffff; border:1px solid #cbd5e1; padding:12px; border-radius:8px;">
-                <b style="color:#334155; font-size:12px;">Reference:</b>
-                <span style="display:block; font-size:13px; color:#0f172a; margin-top:2px;">${escapeHTML(referenceText) || 'No reference details.'}</span>
-            </div>
-
-            <div style="grid-column: span 2; background:#e2e8f0; border:1px solid #cbd5e1; padding:16px; border-radius:10px; margin-top:10px;">
-                ${followUpHTML}
-            </div>
-        `;
-        document.getElementById('viewModal').style.display = 'block';
-    }
-
-    function closeModal() { document.getElementById('viewModal').style.display = 'none'; }
-
-     async function deleteLead(id) {
-        if (currentUser !== "Admin") {
-            alert("🛑 Access Denied! Deletion is restricted to Admin Mode only.");
-            return; 
-        }
-        if (confirm('Are you sure you want to permanently delete this lead record?')) {
-            leads = leads.filter(l => l.id !== id);
-            saveAndRender();
-            
-            try {
-                await fetch(scriptURL, {
-                    method: 'POST', 
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ 
-                        apiKey: API_KEY,
-                        action: 'bulkSync', 
-                        leads: leads 
-                    }) 
-                });
-                alert('✅ Lead deleted successfully from System AND Google Sheet.');
-            } catch (err) {
-                console.error('Delete sync error:', err);
-                alert('⚠️ Lead deleted locally, but Google Sheet sync failed.');
-            }
-        }
-    }
-
-    function exportToCSV() {
-        let exportLeads = leads;
-        if(currentTab !== 'All Leads') {
-            exportLeads = leads.filter(l => getLeadVal(l, 'director', 'Director') === currentTab);
-        }
-
-        if (exportLeads.length === 0) {
-            alert('No lead records available to export in this tab!');
-            return;
-        }
-
-        let csv = 'Client Name,Person Name,Designation,Mobile,Email,STD Code,Work Tel,Address,City,Country,Source,Status,Original Proposal,Final Agreed,Discount Amt,Discount %,Reference,Follow Up Notes,Remarks,Director\n';
-        const cleanCSVField = (str) => `"${(str || '').toString().replace(/"/g, '""').replace(/\n/g, ' ')}"`;
-
-        exportLeads.forEach(l => {
-            csv += `${cleanCSVField(getLeadVal(l, 'clientName', 'Client Name'))},${cleanCSVField(getLeadVal(l, 'personName', 'Person Name'))},${cleanCSVField(getLeadVal(l, 'designation', 'Designation'))},"${'\'' + getLeadVal(l, 'mobile', 'Mobile')}",${cleanCSVField(getLeadVal(l, 'email', 'Email'))},${cleanCSVField(getLeadVal(l, 'stdCode', 'STD Code'))},${cleanCSVField(getLeadVal(l, 'workTel', 'Work Tel'))},${cleanCSVField(getLeadVal(l, 'address', 'Address'))},${cleanCSVField(getLeadVal(l, 'city', 'City'))},${cleanCSVField(getLeadVal(l, 'country', 'Country'))},${cleanCSVField(getLeadVal(l, 'source', 'Source'))},${cleanCSVField(getLeadVal(l, 'status', 'Status'))},"${getLeadVal(l, 'proposal', 'Original Proposal') || 0}","${getLeadVal(l, 'agreed', 'Final Agreed') || 0}","${getLeadVal(l, 'discountAmt', 'Discount Amt') || 0}",${cleanCSVField(getLeadVal(l, 'discountPer', 'Discount %'))},${cleanCSVField(getLeadVal(l, 'reference', 'Reference', 'Summary', 'summary'))},${cleanCSVField(getLeadVal(l, 'followUpNotes', 'Follow Up Notes', 'Remarks', 'remarks'))},"",${cleanCSVField(getLeadVal(l, 'director', 'Director'))}\n`;
-        });
-
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        let filename = currentTab === 'All Leads' ? 'All_Leads' : currentTab.replace(/ /g, '_');
-        link.setAttribute('download', `CRM_Export_${filename}_${new Date().toISOString().slice(0,10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    function triggerImportCSV() {
-        if (currentUser !== "Admin") return;
-        document.getElementById('csvFileInput').click();
-    }
+    function triggerImportCSV() { if (currentUser === "Admin") document.getElementById('csvFileInput').click(); }
 
     function processImportCSV(e) {
         const file = e.target.files[0];
@@ -1276,214 +982,52 @@
         const reader = new FileReader();
         reader.onload = async function(event) {
             const content = event.target.result;
-            let rows = []; let curRow = []; let curVal = ''; let inQuotes = false;
-
-            for (let i = 0; i < content.length; i++) {
-                let c = content[i]; let nextC = content[i+1];
-                if (c === '"') {
-                    if (inQuotes && nextC === '"') { curVal += '"'; i++; } else { inQuotes = !inQuotes; }
-                } else if (c === ',' && !inQuotes) {
-                    curRow.push(curVal.trim()); curVal = '';
-                } else if ((c === '\r' || c === '\n') && !inQuotes) {
-                    if (c === '\r' && nextC === '\n') { i++; }
-                    curRow.push(curVal.trim());
-                    if (curRow.some(cell => cell !== '')) { rows.push(curRow); }
-                    curRow = []; curVal = '';
-                } else { curVal += c; }
-            }
-            if (curVal || curRow.length > 0) { curRow.push(curVal.trim()); rows.push(curRow); }
-
-            if (rows.length <= 1) { alert("❌ CSV file is empty."); return; }
-
-            const headers = rows[0].map(h => String(h || '').replace(/^\\uFEFF/, '').trim().toLowerCase());
-            const colIndex = (names, fallback) => {
-                for (const name of names) {
-                    const idx = headers.indexOf(name.toLowerCase());
-                    if (idx >= 0) return idx;
-                }
-                return fallback;
-            };
-
-             const IDX = {
-                clientName: colIndex(['client name', 'client/company', 'client', 'company'], 0),
-                personName: colIndex(['person name', 'contact person', 'person'], 1),
-                designation: colIndex(['designation', 'job title'], 2),
-                mobile: colIndex(['mobile', 'mobile no', 'mobile number', 'phone'], 3),
-                email: colIndex(['email', 'email id'], 4),
-                stdCode: colIndex(['std code', 'std'], 5),
-                workTel: colIndex(['work tel', 'work telephone', 'telephone'], 6),
-                address: colIndex(['address'], 7),
-                city: colIndex(['city'], 8),
-                country: colIndex(['country'], 9),
-                source: colIndex(['source', 'lead source'], 10),
-                status: colIndex(['status', 'lead status'], 11),
-                proposal: colIndex(['original proposal', 'proposal'], 12),
-                agreed: colIndex(['final agreed', 'agreed'], 13),
-                discountAmt: colIndex(['discount amt', 'discount amount'], 14),
-                discountPer: colIndex(['discount %', 'discount percent'], 15),
-                reference: colIndex(['reference', 'summary'], 16),
-                followUpNotes: colIndex(['follow up notes', 'follow-up notes', 'followup notes', 'follow up note'], 17),
-                remarks: colIndex(['remarks', 'remark'], 18),
-                director: colIndex(['director', 'card belongs to'], 19)
-            };
-
+            let rows = content.split('\n').map(r => r.split(','));
             let importedCount = 0;
 
             for (let i = 1; i < rows.length; i++) {
-                const cols = rows[i];
-                if (cols.length >= 2 && cols[IDX.clientName]) {
-                    const mobileRaw = (cols[IDX.mobile] || '').replace(/'/g, '');
-                    const noteVal = (cols[IDX.followUpNotes] || cols[IDX.remarks] || '').trim();
-
+                if (rows[i].length >= 2 && rows[i][0]) {
                     const newLead = {
                         id: Date.now() + i,
-                        director: IDX.director !== -1 ? (cols[IDX.director] || 'Ajay Poddar') : 'Ajay Poddar',
-                        clientName: cols[IDX.clientName] || '',
-                        personName: cols[IDX.personName] || 'N/A',
-                        designation: cols[IDX.designation] || '',
-                        countryCode: '+91',
-                        mobile: mobileRaw,
-                        email: cols[IDX.email] || '',
-                        stdCode: cols[IDX.stdCode] || '',
-                        workTel: cols[IDX.workTel] || '',
-                        address: cols[IDX.address] || '',
-                        city: cols[IDX.city] || '',
-                        country: cols[IDX.country] || 'India',
-                        source: cols[IDX.source] || 'Referral',
-                        status: cols[IDX.status] || 'New',
-                        proposal: parseNumber(cols[IDX.proposal]),
-                        agreed: parseNumber(cols[IDX.agreed]),
-                        discountAmt: parseNumber(cols[IDX.discountAmt]),
-                        discountPer: cols[IDX.discountPer] || '',
-                        reference: cols[IDX.reference] || '',
-                        followUpNotes: noteVal,
-                        "Follow Up Notes": noteVal,
-                        followUps: noteVal ? [{ date: 'Imported from CSV', member: 'Existing Record', status: (cols[IDX.status] || 'New'), note: noteVal, nextDate: '' }] : []
+                        clientName: rows[i][0].replace(/"/g, ''),
+                        personName: rows[i][1] ? rows[i][1].replace(/"/g, '') : '',
+                        mobile: rows[i][3] ? rows[i][3].replace(/"/g, '') : '',
+                        email: rows[i][4] ? rows[i][4].replace(/"/g, '') : '',
+                        director: rows[i][18] ? rows[i][18].replace(/"/g, '').trim() : 'Ajay Poddar',
+                        status: 'New'
                     };
-                    leads.push(newLead);
+                    await db.ref("leads").push(newLead);
                     importedCount++;
                 }
             }
-
-            saveAndRender();
-            alert(`✅ Successfully imported ${importedCount} leads into CRM. Now syncing to Google Sheet...`);
-            document.getElementById('csvFileInput').value = '';
-            await syncAllLeadsToGoogleSheet();
+            alert(`✅ Successfully imported ${importedCount} leads into Firebase!`);
         };
         reader.readAsText(file);
     }
 
+    function exportToCSV() {
+        let exportLeads = (currentTab === 'All Leads') ? leads : leads.filter(l => getLeadVal(l, 'director', 'Director') === currentTab);
+        if (exportLeads.length === 0) { alert('No leads to export!'); return; }
+
+        let csv = 'Client Name,Person Name,Mobile,Email,Director,Status\n';
+        exportLeads.forEach(l => {
+            csv += `"${getLeadVal(l, 'clientName')}","${getLeadVal(l, 'personName')}","${getLeadVal(l, 'mobile')}","${getLeadVal(l, 'email')}","${getLeadVal(l, 'director')}","${getLeadVal(l, 'status')}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `CRM_Export_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+    }
+
     function normalizeFollowUpHistory() {
-        leads = (Array.isArray(leads) ? leads : []).map((lead, index) => {
-            if (!lead.id) lead.id = Date.now() + index;
-
-            if (!lead.director || lead.director.trim() === '') {
-                lead.director = 'Ajay Poddar';
-            }
-
-            const note = getLeadVal(lead, 'followUpNotes', 'Follow Up Notes', 'Remarks', 'remarks');
-            if (!Array.isArray(lead.followUps)) lead.followUps = [];
-
-            if (note && lead.followUps.length === 0) {
-                lead.followUps.push({ date: 'Existing Record', member: 'Existing Record', status: getLeadVal(lead, 'status', 'Status') || 'New', note: String(note), nextDate: '' });
-            }
-            return lead;
-        });
+        leads.forEach(l => { if (!Array.isArray(l.followUps)) l.followUps = []; });
     }
 
-    function saveAndRender() {
-        normalizeFollowUpHistory();
-        localStorage.setItem('crm_leads_v10', JSON.stringify(leads));
-        renderLeads();
-    }
-
-    async function syncAllLeadsToGoogleSheet() {
-        if (!scriptURL) return false;
-        if (!Array.isArray(leads) || leads.length === 0) return false;
-
-        try {
-            await fetch(scriptURL, {
-                method: 'POST', mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ 
-                    apiKey: API_KEY,
-                    action: 'bulkSync', 
-                    leads: leads 
-                })
-            });
-            alert('✅ All leads sent to Google Sheet.');
-            return true;
-        } catch (err) {
-            console.error('Bulk sync error:', err);
-            return false;
-        } 
-    }
-
-    async function fetchLeadsFromCloud() {
-        if(!scriptURL) return;
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
-            
-            const fetchURL = `${scriptURL}?apiKey=${API_KEY}&action=getLeads`;
-            
-            const response = await fetch(fetchURL, { signal: controller.signal, cache: 'no-store' });
-            clearTimeout(timeoutId);
-
-            if (response.ok) {
-                const data = await response.json();
-                if (Array.isArray(data)) {
-                    leads = data;
-                    localStorage.setItem('crm_leads_v10', JSON.stringify(leads));
-                    if(currentUser) { normalizeFollowUpHistory(); renderLeads(); }
-                }
-            }
-        } catch (err) {
-            console.log("Cloud sync unavailable.");
-        }
-    }
-
-    window.onclick = function(event) {
-        if (event.target.classList.contains('modal')) { event.target.style.display = "none"; }
-    };
-
-    window.onkeydown = function(event) {
-        if (event.key === 'Escape') { closeModal(); closeFollowUpModal(); }
-    };
-
+    window.onclick = function(event) { if (event.target.classList.contains('modal')) event.target.style.display = "none"; };
     populateCountries();
-    try { leads = JSON.parse(localStorage.getItem('crm_leads_v10')) || []; } catch (e) { leads = []; }
-    fetchLeadsFromCloud(); 
-
-    document.addEventListener('contextmenu', event => { if (currentUser !== "Admin") event.preventDefault(); });
-
-    document.addEventListener('keydown', function(e) {
-        if (currentUser !== "Admin") {
-            if (e.key === 'F12') { e.preventDefault(); return false; }
-            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) { e.preventDefault(); return false; }
-            if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) { e.preventDefault(); return false; }
-            if (e.ctrlKey && (e.key === 'U' || e.key === 'u')) { e.preventDefault(); return false; }
-            if (e.ctrlKey && (e.key === 'S' || e.key === 's')) { e.preventDefault(); return false; }
-            if (e.ctrlKey && (e.key === 'P' || e.key === 'p')) { e.preventDefault(); return false; }
-        }
-    });
-
-    function checkDuplicate() {
-        if (currentEditingLeadId) return; 
-        const cName = document.getElementById('clientName').value.trim().toLowerCase();
-        const pName = document.getElementById('personName').value.trim().toLowerCase();
-        if (!cName && !pName) return;
-
-        const duplicate = leads.find(lead => {
-            const existingClient = getLeadVal(lead, 'clientName', 'Client Name').toLowerCase();
-            const existingPerson = getLeadVal(lead, 'personName', 'Person Name').toLowerCase();
-            return (cName && existingClient === cName) || (pName && existingPerson === pName);
-        });
-
-        if (duplicate) {
-            alert(`⚠️ Alert:  This name already exists in the database!\nClient: ${getLeadVal(duplicate, 'clientName', 'Client Name')}\nPerson: ${getLeadVal(duplicate, 'personName', 'Person Name')}`);
-        }
-    }
 
     window.addEventListener('DOMContentLoaded', () => {
         const savedUser = sessionStorage.getItem('crm_active_user');
@@ -1494,41 +1038,6 @@
             setupUserUI();
         }
     });
-
-    function checkFollowUpReminders() {
-        if (!currentUser) return; 
-        
-        const now = new Date();
-        let remindedLeads = JSON.parse(localStorage.getItem('crm_reminded_leads_v2')) || {};
-
-        leads.forEach(lead => {
-            const leadDirector = getLeadVal(lead, 'director', 'Director');
-            if (currentUser !== 'Admin' && leadDirector !== currentUser) return;
-
-            if (lead.followUps && lead.followUps.length > 0) {
-                const latestFollowUp = lead.followUps[lead.followUps.length - 1]; 
-                
-                if (latestFollowUp.nextDate) {
-                    const nextDateObj = new Date(latestFollowUp.nextDate);
-                    
-                    if (!isNaN(nextDateObj) && nextDateObj <= now) {
-                        const reminderKey = lead.id + "_" + latestFollowUp.nextDate; 
-                        let remindCount = remindedLeads[reminderKey] || 0;
-                        
-                        if (remindCount < 3) {
-                            alert(`⏰ REMINDER (${remindCount + 1}/3): Follow-up Due!\n\nClient: ${lead.clientName}\nPerson: ${lead.personName}\nMobile: ${lead.mobile}\n\nLast Note: ${latestFollowUp.note}`);
-                            remindedLeads[reminderKey] = remindCount + 1;
-                            localStorage.setItem('crm_reminded_leads_v2', JSON.stringify(remindedLeads));
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    setInterval(checkFollowUpReminders, 60000);
-    setTimeout(checkFollowUpReminders, 5000); 
-
 </script>
 </body>
 </html>

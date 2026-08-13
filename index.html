@@ -56,7 +56,7 @@
         .header-container { display: flex; align-items: center; justify-content: space-between; position: relative; margin-bottom: 20px; padding: 10px 0; gap: 15px; }
         .header-left { display: flex; align-items: center; z-index: 2; flex: 1; gap: 10px; }
         
-         .header-left select { 
+        .header-left select { 
             width: 140px; 
             padding: 8px 10px; 
             font-weight: 700; 
@@ -69,7 +69,6 @@
             font-size: 13px; 
             box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3); 
             transition: all 0.3s ease;
-            
             white-space: nowrap; 
             overflow: hidden; 
             text-overflow: ellipsis; 
@@ -196,7 +195,7 @@
             </select>
             <input type="password" id="loginPin" required placeholder="Enter Secret PIN">
             <button type="submit">Secure Login</button>
-            </form>
+        </form>
     </div>
 </div>
 
@@ -270,11 +269,11 @@
                 <h2 id="formHeader">Add New Lead / Customer</h2>
             </div> 
             
-             <form id="crmForm">
+            <form id="crmForm">
                 <div class="form-grid">
                     <div>
                         <label>Card Belongs To (Filter/Director) *</label>
-                         <select id="director" required style="border-color: #2563eb; background-color: #eff6ff;" onchange="filterTable(this.value)">
+                        <select id="director" required style="border-color: #2563eb; background-color: #eff6ff;" onchange="filterTable(this.value)">
                             <option value="All Leads" id="opt-all-dir">-- All Leads (Admin) --</option>
                             <option value="Ajay Poddar">Ajay Poddar</option>
                             <option value="Pranav Poddar">Pranav Poddar</option>
@@ -283,11 +282,11 @@
                     </div>
                     <div>
                         <label>Company Name *</label>
-                        <input type="text" id="clientName" required placeholder="e.g. ABC Pvt Ltd" onchange="checkDuplicate()">
+                        <input type="text" id="clientName" required placeholder="e.g. ABC Pvt Ltd">
                     </div>
                     <div>
                         <label>Contact Person Name *</label>
-                         <input type="text" id="personName" required placeholder="e.g. Rahul Sharma" onchange="checkDuplicate()">
+                        <input type="text" id="personName" required placeholder="e.g. Rahul Sharma">
                     </div>
                     <div>
                         <label>Designation</label>
@@ -403,7 +402,6 @@
                 <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px;">
                     <button type="submit" id="submitBtn" class="btn-submit" style="width: max-content; padding: 10px 30px;">Save / Update</button>
                     <button type="button" onclick="resetFormState()" style="width: max-content; background: #1e3a8a; color: white; border: none; padding: 10px 30px; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(30, 58, 138, 0.25);">Cancel</button>
-                    <button type="button" id="cancelEditBtn" style="display:none;"></button>
                 </div>
             </form>
         </div>
@@ -488,7 +486,7 @@
     </div>
 </div>
 
- <!-- Firebase Libraries (Must be in head or before main script) -->
+<!-- Firebase Compatible Libraries -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
@@ -504,7 +502,6 @@
       appId: "1:294154079975:web:3c8f6cc233089c30829c42"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -529,7 +526,7 @@
 
     const form = document.getElementById('crmForm');
 
-    // 🔥 Realtime Listener: Automatic Cloud Data Sync
+    // 🔥 Realtime Listener: Cloud Database Data Sync
     db.ref("leads").on("value", (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -559,17 +556,16 @@
 
         if (storedPasswords[role] === inputHash) {
             if (forcePassChange[role]) {
-                alert("⚠️ Your password has been reset by the Admin. Please set a new password.");
+                alert("⚠️ Password has been reset.");
                 let newPass = prompt("✨ Enter NEW Password:");
-                if (!newPass || newPass.trim() === "") { alert("❌ Password change cancelled. Login failed."); return; }
-                let confirmPass = prompt("🔄 Confirm NEW Password:");
-                if (newPass !== confirmPass) { alert("❌ Passwords do not match! Please login again."); return; }
+                if (!newPass || newPass.trim() === "") { alert("❌ Cancelled."); return; }
+                let confirmPass = prompt("🔄 Confirm Password:");
+                if (newPass !== confirmPass) { alert("❌ Mismatch!"); return; }
                 
                 storedPasswords[role] = await hashPIN(newPass.trim());
                 localStorage.setItem('crm_user_passwords', JSON.stringify(storedPasswords));
                 forcePassChange[role] = false;
                 localStorage.setItem('crm_force_pass', JSON.stringify(forcePassChange));
-                alert("✅ Password successfully updated! Logging in...");
             }
 
             currentUser = role;
@@ -579,7 +575,7 @@
             
             setupUserUI();
         } else {
-            alert("❌ Incorrect PIN! Please try again.");
+            alert("❌ Incorrect PIN!");
             document.getElementById('loginPin').value = '';
         }
     }
@@ -637,12 +633,12 @@
         } 
         else if (action.startsWith("Reset_")) {
             const userToReset = action.split("_")[1]; 
-            if (confirm(`🛠️ Are you sure you want to reset the password for ${userToReset} to '1234'?`)) {
+            if (confirm(`🛠️ Reset password for ${userToReset}?`)) {
                 storedPasswords[userToReset] = DEFAULT_HASH;
                 localStorage.setItem('crm_user_passwords', JSON.stringify(storedPasswords));
                 forcePassChange[userToReset] = true;
                 localStorage.setItem('crm_force_pass', JSON.stringify(forcePassChange));
-                alert(`✅ Password for ${userToReset} successfully reset to 1234.`);
+                alert(`✅ Reset successful.`);
             }
         }
         else if (action === "Logout") {
@@ -755,16 +751,16 @@
             itemDiv.style.cssText = "background:#cbd5e1; padding:8px 12px; margin-bottom:4px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:13px;";
             itemDiv.innerHTML = `
                 <span><strong>${escapeHTML(getLeadVal(l, 'clientName', 'Client Name'))}</strong> (${escapeHTML(getLeadVal(l, 'personName', 'Person Name'))})</span>
-                <button type="button" onclick="loadLeadToForm(${l.id})" style="background:#d97706; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">Edit</button>
+                <button type="button" onclick="loadLeadToForm('${l.id}')" style="background:#d97706; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">Edit</button>
             `;
             resultsDiv.appendChild(itemDiv);
         });
     }
 
     function loadLeadToForm(id) {
-        const l = leads.find(item => item.id === id);
+        const l = leads.find(item => String(item.id) === String(id));
         if (!l) return;
-        currentEditingLeadId = id;
+        currentEditingLeadId = l.id;
         
         document.getElementById('director').value = getLeadVal(l, 'director', 'Director') || '';
         document.getElementById('clientName').value = getLeadVal(l, 'clientName', 'Client Name');
@@ -804,7 +800,7 @@
         clearSearch();
     }
 
-    // 🔥 FORM SUBMISSION: DIRECTLY TO FIREBASE REALTIME CLOUD
+    // 🔥 SAVE/UPDATE LEAD TO FIREBASE
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -812,7 +808,7 @@
         if(currentUser !== 'Admin') finalDirector = currentUser;
 
         if (finalDirector === 'All Leads' || finalDirector === '') {
-            alert("⚠️ Please select a specific Director to save this lead.");
+            alert("⚠️ Please select a specific Director.");
             return; 
         }
 
@@ -822,7 +818,7 @@
 
         const selectedDesignation = document.getElementById('designation').value;
         const customDesignationValue = document.getElementById('customDesignation').value.trim();
-        const existingLead = leads.find(item => item.id === currentEditingLeadId);
+        const existingLead = leads.find(item => String(item.id) === String(currentEditingLeadId));
 
         const leadData = {
             id: currentEditingLeadId ? currentEditingLeadId : Date.now(),
@@ -851,13 +847,11 @@
 
         try {
             if (currentEditingLeadId && existingLead && existingLead.firebaseKey) {
-                // Update Existing Lead in Firebase
                 await db.ref("leads/" + existingLead.firebaseKey).update(leadData);
             } else {
-                // Save New Lead to Firebase
                 await db.ref("leads").push(leadData);
             }
-            alert("✅ Lead successfully saved to Firebase Cloud!");
+            alert("✅ Lead successfully saved to Firebase!");
         } catch (err) {
             alert("⚠️ Error saving to Firebase: " + err.message);
         } finally {
@@ -889,7 +883,7 @@
         let tabLeads = (currentTab === 'All Leads') ? leads : leads.filter(l => getLeadVal(l, 'director', 'Director') === currentTab);
 
         if (!tabLeads || tabLeads.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#64748b; padding: 20px;">No leads recorded yet in this section.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#64748b; padding: 20px;">No leads recorded yet.</td></tr>`;
             updateStats(tabLeads);
             return;
         }
@@ -914,8 +908,8 @@
                 <td><span class="badge badge-${badgeClass}">${escapeHTML(status)}</span></td>
                 <td>₹${formatNumber(agreed)}</td>
                 <td>
-                    <button class="btn-action btn-note" onclick="openFollowUpModal(${lead.id})">+ Note</button>
-                    <button class="btn-action btn-view" onclick="viewLeadDetails(${lead.id})">View</button>
+                    <button class="btn-action btn-note" onclick="openFollowUpModal('${lead.id}')">+ Note</button>
+                    <button class="btn-action btn-view" onclick="viewLeadDetails('${lead.id}')">View</button>
                     ${adminDeleteHTML}
                 </td>
             `;
@@ -924,13 +918,13 @@
         updateStats(tabLeads);
     }
 
-    // 🔥 DELETE LEAD DIRECTLY FROM FIREBASE
+    // 🔥 DELETE LEAD FROM FIREBASE
     async function deleteLead(firebaseKey) {
         if (currentUser !== "Admin") { alert("🛑 Access Denied!"); return; }
         if (confirm('Are you sure you want to permanently delete this lead?')) {
             try {
                 await db.ref("leads/" + firebaseKey).remove();
-                alert('✅ Lead deleted permanently from Firebase Database.');
+                alert('✅ Lead deleted permanently.');
             } catch (err) {
                 alert('⚠️ Delete failed: ' + err.message);
             }
@@ -938,9 +932,9 @@
     }
 
     function openFollowUpModal(id) {
-        const lead = leads.find(l => l.id === id);
+        const lead = leads.find(l => String(l.id) === String(id));
         if (!lead) return;
-        document.getElementById('followUpLeadId').value = id;
+        document.getElementById('followUpLeadId').value = lead.id;
         document.getElementById('fuStatus').value = getLeadVal(lead, 'status', 'Status') || 'New';
         document.getElementById('followUpModal').style.display = 'block';
     }
@@ -949,8 +943,8 @@
 
     async function saveFollowUp(e) {
         e.preventDefault();
-        const id = parseNumber(document.getElementById('followUpLeadId').value);
-        const lead = leads.find(l => l.id === id);
+        const id = document.getElementById('followUpLeadId').value;
+        const lead = leads.find(l => String(l.id) === String(id));
         if (!lead || !lead.firebaseKey) return;
 
         const newStatus = document.getElementById('fuStatus').value;
@@ -973,8 +967,73 @@
         alert("✅ Follow-up saved in Firebase!");
     }
 
+    // 🔍 VIEW LEAD DETAILS FUNCTION (FIXED & FULLY IMPLEMENTED)
+    function viewLeadDetails(id) {
+        const lead = leads.find(l => String(l.id) === String(id));
+        if (!lead) {
+            console.error("Lead not found for ID:", id);
+            return;
+        }
+
+        document.getElementById('modalClientTitle').innerText = `📋 Lead Details: ${getLeadVal(lead, 'clientName', 'Client Name')}`;
+
+        const container = document.getElementById('modalDetails');
+        
+        let followUpHTML = '';
+        if (lead.followUps && lead.followUps.length > 0) {
+            followUpHTML = lead.followUps.map(fu => `
+                <div style="background:#f1f5f9; border-left:4px solid #2563eb; padding:8px; margin-top:6px; border-radius:4px; font-size:12px;">
+                    <strong>${escapeHTML(fu.date || '')}</strong> (${escapeHTML(fu.member || 'Team')}) - <span class="badge badge-${(fu.status || 'New').replace(/\s+/g, '')}">${escapeHTML(fu.status || '')}</span><br>
+                    <em>"${escapeHTML(fu.note || '')}"</em>
+                    ${fu.nextDate ? `<br><small style="color:#d97706;"><strong>Next Follow-up:</strong> ${escapeHTML(fu.nextDate)}</small>` : ''}
+                </div>
+            `).join('');
+        } else {
+            followUpHTML = '<p style="font-size:12px; color:#64748b; margin-top:4px;">No follow-up history logged yet.</p>';
+        }
+
+        container.innerHTML = `
+            <p><strong>Director / Card:</strong> ${escapeHTML(getLeadVal(lead, 'director', 'Director'))}</p>
+            <p><strong>Company Name:</strong> ${escapeHTML(getLeadVal(lead, 'clientName', 'Client Name'))}</p>
+            <p><strong>Contact Person:</strong> ${escapeHTML(getLeadVal(lead, 'personName', 'Person Name'))} (${escapeHTML(getLeadVal(lead, 'designation', 'Designation') || '-')})</p>
+            <p><strong>Mobile Number:</strong> ${escapeHTML(getLeadVal(lead, 'countryCode', 'Country Code'))} ${escapeHTML(getLeadVal(lead, 'mobile', 'Mobile'))}</p>
+            <p><strong>Email:</strong> ${escapeHTML(getLeadVal(lead, 'email', 'Email') || '-')}</p>
+            <p><strong>Work Telephone:</strong> ${escapeHTML(getLeadVal(lead, 'stdCode', 'STD'))} ${escapeHTML(getLeadVal(lead, 'workTel', 'Work Tel') || '-')}</p>
+            <p><strong>City & Country:</strong> ${escapeHTML(getLeadVal(lead, 'city', 'City') || '-')}, ${escapeHTML(getLeadVal(lead, 'country', 'Country') || '-')}</p>
+            <p><strong>Lead Source:</strong> ${escapeHTML(getLeadVal(lead, 'source', 'Source') || '-')}</p>
+            <p><strong>Current Status:</strong> <span class="badge badge-${(getLeadVal(lead, 'status', 'Status') || 'New').replace(/\s+/g, '')}">${escapeHTML(getLeadVal(lead, 'status', 'Status'))}</span></p>
+            <p><strong>Original Proposal:</strong> ₹${formatNumber(parseNumber(getLeadVal(lead, 'proposal', 'Original Proposal')))}</p>
+            <p><strong>Final Agreed Amount:</strong> ₹${formatNumber(parseNumber(getLeadVal(lead, 'agreed', 'Final Agreed')))}</p>
+            <p><strong>Discount:</strong> ₹${formatNumber(parseNumber(getLeadVal(lead, 'discountAmt')))} (${escapeHTML(getLeadVal(lead, 'discountPer') || '0%')})</p>
+            <div style="grid-column: span 2; background:#fff; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+                <strong>Reference / Context:</strong><br>
+                <span style="font-size:13px;">${escapeHTML(getLeadVal(lead, 'reference', 'Reference') || 'None')}</span>
+            </div>
+            <div style="grid-column: span 2; background:#fff; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+                <strong>Follow-Up History & Notes:</strong>
+                ${followUpHTML}
+            </div>
+        `;
+
+        document.getElementById('viewModal').style.display = 'block';
+    }
+
+    // ❌ CLOSE VIEW MODAL
+    function closeModal() {
+        document.getElementById('viewModal').style.display = 'none';
+    }
+
     function triggerImportCSV() { if (currentUser === "Admin") document.getElementById('csvFileInput').click(); }
 
+     // 🛑 Import cancel karne ke liye global variable
+    let isImportCancelled = false;
+
+    // 🛑 Stop Import Trigger Function
+    function stopCSVImport() {
+        isImportCancelled = true;
+    }
+
+    // 📤 SMART IMPORT CSV (Duplicate Skipping + Live Progress + Stop Button)
     function processImportCSV(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -983,24 +1042,78 @@
         reader.onload = async function(event) {
             const content = event.target.result;
             let rows = content.split('\n').map(r => r.split(','));
+            if (rows.length <= 1) { alert("❌ File is empty!"); return; }
+
+            isImportCancelled = false;
             let importedCount = 0;
+            let skippedCount = 0;
+
+            // Live Progress & Stop Button Screen Par Banaene Ke Liye
+            let statusBox = document.getElementById('importStatusBox');
+            if (!statusBox) {
+                statusBox = document.createElement('div');
+                statusBox.id = 'importStatusBox';
+                statusBox.style.cssText = "position:fixed; bottom:20px; right:20px; background:#0f172a; color:#fff; padding:15px 20px; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,0.5); z-index:9999; font-size:13px; display:flex; flex-direction:column; gap:8px;";
+                document.body.appendChild(statusBox);
+            }
+            statusBox.style.display = 'flex';
+
+            // Fast Matching Ke Liye Database Se Mobile Aur Email Ka Record Pehle Hi Nikal Liya
+            const existingMobiles = new Set(leads.map(l => String(getLeadVal(l, 'mobile', 'Mobile')).trim()).filter(Boolean));
+            const existingEmails = new Set(leads.map(l => String(getLeadVal(l, 'email', 'Email')).trim().toLowerCase()).filter(Boolean));
 
             for (let i = 1; i < rows.length; i++) {
-                if (rows[i].length >= 2 && rows[i][0]) {
-                    const newLead = {
-                        id: Date.now() + i,
-                        clientName: rows[i][0].replace(/"/g, ''),
-                        personName: rows[i][1] ? rows[i][1].replace(/"/g, '') : '',
-                        mobile: rows[i][3] ? rows[i][3].replace(/"/g, '') : '',
-                        email: rows[i][4] ? rows[i][4].replace(/"/g, '') : '',
-                        director: rows[i][18] ? rows[i][18].replace(/"/g, '').trim() : 'Ajay Poddar',
-                        status: 'New'
-                    };
-                    await db.ref("leads").push(newLead);
-                    importedCount++;
+                // Agar user ne Stop button daba diya toh import wahin ruk jayega
+                if (isImportCancelled) {
+                    alert(`🛑 Import Stopped by User!\n\n✅ Uploaded: ${importedCount}\n⏩ Skipped (Duplicates): ${skippedCount}`);
+                    break;
                 }
+
+                if (rows[i].length >= 2 && rows[i][0]) {
+                    const cName = rows[i][0].replace(/"/g, '').trim();
+                    const pName = rows[i][1] ? rows[i][1].replace(/"/g, '').trim() : '';
+                    const mob = rows[i][3] ? rows[i][3].replace(/"/g, '').trim() : '';
+                    const eml = rows[i][4] ? rows[i][4].replace(/"/g, '').trim().toLowerCase() : '';
+                    const dir = rows[i][18] ? rows[i][18].replace(/"/g, '').trim() : 'Ajay Poddar';
+
+                    // 🔍 DUPLICATE CHECK: Mobile ya Email match hone par SKIPPED
+                    if ((mob && existingMobiles.has(mob)) || (eml && existingEmails.has(eml))) {
+                        skippedCount++;
+                    } else {
+                        const newLead = {
+                            id: Date.now() + i,
+                            clientName: cName,
+                            personName: pName || 'N/A',
+                            mobile: mob,
+                            email: eml,
+                            director: dir || 'Ajay Poddar',
+                            status: 'New'
+                        };
+
+                        // Firebase Cloud me push karein
+                        await db.ref("leads").push(newLead);
+
+                        // Set me add kar rahe hain taaki is CSV ke andar ki duplicate rows bhi dobara na jayen
+                        if (mob) existingMobiles.add(mob);
+                        if (eml) existingEmails.add(eml);
+                        importedCount++;
+                    }
+                }
+
+                // Screen par real-time progress update
+                statusBox.innerHTML = `
+                    <span>⏳ Processing Row <strong>${i}</strong> of <strong>${rows.length - 1}</strong></span>
+                    <span style="color:#8cc63f;">✅ Added: ${importedCount} | ⏩ Skipped: ${skippedCount}</span>
+                    <button onclick="stopCSVImport()" style="background:#dc2626; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px; margin-top:4px;">🛑 Stop Import</button>
+                `;
             }
-            alert(`✅ Successfully imported ${importedCount} leads into Firebase!`);
+
+            if (!isImportCancelled) {
+                alert(`🎉 Import Complete!\n\n✅ Newly Uploaded: ${importedCount}\n⏩ Duplicates Skipped: ${skippedCount}`);
+            }
+
+            statusBox.style.display = 'none';
+            document.getElementById('csvFileInput').value = '';
         };
         reader.readAsText(file);
     }
@@ -1028,6 +1141,42 @@
 
     window.onclick = function(event) { if (event.target.classList.contains('modal')) event.target.style.display = "none"; };
     populateCountries();
+
+    // ⏰ AUTOMATIC FOLLOW-UP REMINDER FUNCTION (3 TIMES MAX REMINDER)
+    function checkFollowUpReminders() {
+        if (!currentUser) return; 
+        
+        const now = new Date();
+        let remindedLeads = JSON.parse(localStorage.getItem('crm_reminded_leads_v2')) || {};
+
+        leads.forEach(lead => {
+            const leadDirector = getLeadVal(lead, 'director', 'Director');
+            if (currentUser !== 'Admin' && leadDirector !== currentUser) return;
+
+            if (lead.followUps && lead.followUps.length > 0) {
+                const latestFollowUp = lead.followUps[lead.followUps.length - 1]; 
+                
+                if (latestFollowUp.nextDate) {
+                    const nextDateObj = new Date(latestFollowUp.nextDate);
+                    
+                    if (!isNaN(nextDateObj) && nextDateObj <= now) {
+                        const reminderKey = String(lead.id) + "_" + latestFollowUp.nextDate; 
+                        let remindCount = remindedLeads[reminderKey] || 0;
+                        
+                        if (remindCount < 3) {
+                            alert(`⏰ REMINDER (${remindCount + 1}/3): Follow-up Due!\n\nClient: ${getLeadVal(lead, 'clientName', 'Client Name')}\nPerson: ${getLeadVal(lead, 'personName', 'Person Name')}\nMobile: ${getLeadVal(lead, 'mobile', 'Mobile')}\n\nLast Note: ${latestFollowUp.note}`);
+                            remindedLeads[reminderKey] = remindCount + 1;
+                            localStorage.setItem('crm_reminded_leads_v2', JSON.stringify(remindedLeads));
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Timer Interval Starts for Reminders
+    setInterval(checkFollowUpReminders, 60000);
+    setTimeout(checkFollowUpReminders, 3000);
 
     window.addEventListener('DOMContentLoaded', () => {
         const savedUser = sessionStorage.getItem('crm_active_user');
